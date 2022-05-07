@@ -11,4 +11,4 @@ High-performance, minimal remote configuration service that's extremely simple t
 
 It's just an in-memory JSON configuration service, updated from a human-readable web interface and persisted to a file on disk. You can access the configuration from a JSON web API. Plus, `cadre` is really easy to set up: just run a single binary that contains the entire application.
 
-The web server is written in Rust and can easily support over 200,000 HTTP/2 requests per second running on a consumer MacBook Pro, tested using [vegeta](https://github.com/tsenart/vegeta).
+The web server is written in Rust and can easily support over 80,000 HTTP/2 requests per second running on a consumer MacBook Pro, tested using [vegeta](https://github.com/tsenart/vegeta).
