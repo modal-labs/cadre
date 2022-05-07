@@ -1,6 +1,14 @@
 [package]
 name = "cadre"
 version = "0.1.0"
+authors = ["Eric Zhang <ekzhang1@gmail.com>"]
+license = "MIT"
+description = "Cadre is a simple, self-hosted, high-performance, and strongly consistent remote configuration service."
+repository = "https://github.com/modal-labs/cadre"
+documentation = "https://docs.rs/cadre"
+keywords = ["config", "web", "service", "remote"]
+categories = ["development-tools", "web-programming", "config", "database"]
+readme = "README.md"
 edition = "2021"
 
 [dependencies]

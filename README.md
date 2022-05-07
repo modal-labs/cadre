@@ -1,8 +1,8 @@
-# cadre: _configure applications_
+# cadre: _configure apps_
 
 <p align="center">
 <a href="https://crates.io/crates/cadre">
-<img src="https://i.imgur.com/LOsl3Gm.png" width="640"><br>
+<kbd><img src="https://i.imgur.com/LOsl3Gm.png" width="640"></kbd><br>
 <strong>cadre</strong>
 </a>
 </p>
