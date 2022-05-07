@@ -6,7 +6,7 @@
 use std::{io::ErrorKind, ops::Deref, path::PathBuf, sync::Arc};
 
 use anyhow::{Context, Result};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tempfile::NamedTempFile;
 use tokio::{fs, sync::RwLock, task};
 
@@ -26,7 +26,7 @@ impl Storage {
         let path = dir.join("config.json");
         let value = match fs::read(&path).await {
             Ok(data) => serde_json::from_slice(&data)?,
-            Err(err) if err.kind() == ErrorKind::NotFound => Value::Null,
+            Err(err) if err.kind() == ErrorKind::NotFound => json!({}),
             Err(err) => return Err(err.into()),
         };
 

@@ -1,3 +1,180 @@
-<h1>cadre</h1>
+<!DOCTYPE html>
 
-<p>Hello world!</p>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <script src="https://unpkg.com/lodash@4.17.21/lodash.js"></script>
+
+    <link
+      href="https://unpkg.com/jsoneditor@9.7.4/dist/jsoneditor.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/jsoneditor@9.7.4/dist/jsoneditor.min.js"></script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 36px 12px;
+        color: #3f3f3f;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+          "Segoe UI Symbol";
+        font-size: 18px;
+        line-height: 1.5;
+      }
+
+      h1 {
+        margin: 0 0 24px;
+        color: black;
+        font-weight: 600;
+      }
+
+      h1 small {
+        white-space: nowrap;
+        font-size: 0.65em;
+        color: #a0a0a0;
+      }
+
+      a {
+        color: #1e1eff;
+      }
+
+      pre {
+        background: #efefef;
+        padding: 12px 16px;
+        overflow-x: auto;
+      }
+
+      code {
+        font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+          monospace;
+        font-size: 0.9em;
+      }
+
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 16px;
+        background: #c838ff;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #b134e3;
+      }
+
+      button:active {
+        background: #a31ed7;
+      }
+
+      button:disabled {
+        background: #e092ff;
+        cursor: default;
+      }
+    </style>
+
+    <title>cadre</title>
+  </head>
+
+  <body>
+    <h1>cadre <small>configure apps</small></h1>
+
+    <p>
+      <em>This is the cadre web interface.</em> To use, edit the JSON
+      configuration below. All updates are made immediately after saving and
+      reflect atomically in application reads.
+    </p>
+
+    <pre><code><span style="color: #7b0091">curl</span> <span id="base-url">$BASE_URL</span>/p/<span style="font-style: italic; color: rgb(179, 80, 0)">[*path]</span></code></pre>
+
+    <p>
+      To programmatically access configuration, use the REST API above. The URL
+      path is a <em>JSON pointer</em> as standardized by
+      <a href="https://datatracker.ietf.org/doc/html/rfc6901">RFC 6901</a>.
+    </p>
+
+    <div style="margin: 20px 0; display: flex; align-items: center">
+      <button id="submit" disabled>Save Changes</button>
+      <div id="indicator" style="margin-left: 10px; font-size: 24px"></div>
+      <div
+        id="changes"
+        style="
+          margin-left: 10px;
+          font-size: 0.8em;
+          font-style: italic;
+          display: none;
+        "
+      >
+        (pending changes)
+      </div>
+    </div>
+
+    <div id="jsoneditor" style="height: 480px"></div>
+
+    <script type="module">
+      document.getElementById("base-url").innerText = window.location.origin;
+
+      let submitting = false;
+      let clearIndicator = 0;
+      const submit = document.getElementById("submit");
+      const indicator = document.getElementById("indicator");
+      const changes = document.getElementById("changes");
+
+      let currentValue = await fetch("/p").then((resp) => resp.json());
+      let editorValue = currentValue;
+
+      function refresh() {
+        submit.disabled = submitting;
+        changes.style.display = _.isEqual(currentValue, editorValue)
+          ? "none"
+          : "block";
+      }
+
+      const container = document.getElementById("jsoneditor");
+      const options = {
+        mode: "code",
+        onValidate: (value) => {
+          editorValue = value;
+          refresh();
+        },
+      };
+      const editor = new JSONEditor(container, options, editorValue);
+
+      submit.addEventListener("click", async () => {
+        submitting = true;
+        clearTimeout(clearIndicator);
+        indicator.innerText = "🔵";
+        submit.disabled = true;
+        try {
+          const newValue = editorValue;
+          const resp = await fetch("/w", {
+            method: "PUT",
+            body: JSON.stringify(newValue),
+            headers: { "Content-Type": "application/json" },
+          });
+          if (resp.status === 200) {
+            currentValue = newValue;
+            indicator.innerText = "✅";
+          } else {
+            alert("Error: " + resp.status);
+            indicator.innerText = "❌";
+          }
+          clearIndicator = setTimeout(() => (indicator.innerText = ""), 2500);
+        } finally {
+          submitting = false;
+          refresh();
+        }
+      });
+    </script>
+  </body>
+</html>
