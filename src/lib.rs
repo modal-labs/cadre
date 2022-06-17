@@ -10,18 +10,23 @@ use axum::routing::{get, put};
 use axum::{http::StatusCode, response::Html, Json, Router};
 use serde_json::Value;
 
+use crate::s3::S3Storage;
 use crate::storage::Storage;
 
+mod s3;
 mod storage;
 
 /// Web server for handling requests.
 pub async fn server() -> Result<Router> {
     let storage = Storage::new().await?;
+    let s3 = s3::S3Storage::new("modal-cadre-config-store-dev".parse()?).await?;
 
     Ok(Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))
         .route("/p/*path", get(get_handler))
         .route("/w", put(put_handler))
+        .route("/s3", put(put_s3_handler))
+        .layer(Extension(s3))
         .layer(Extension(storage)))
 }
 
@@ -38,6 +43,13 @@ async fn get_handler(
 
 async fn put_handler(Extension(storage): Extension<Storage>, body: Json<Value>) -> StatusCode {
     match storage.write(&body).await {
+        Ok(()) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
+
+async fn put_s3_handler(Extension(s3): Extension<S3Storage>, body: Json<Value>) -> StatusCode {
+    match s3.write(&body).await {
         Ok(()) => StatusCode::OK,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }

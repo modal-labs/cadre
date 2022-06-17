@@ -157,7 +157,7 @@
         submit.disabled = true;
         try {
           const newValue = editorValue;
-          const resp = await fetch("/w", {
+          const resp = await fetch("/s3", {
             method: "PUT",
             body: JSON.stringify(newValue),
             headers: { "Content-Type": "application/json" },

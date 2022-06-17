@@ -43,13 +43,21 @@ impl Storage {
 
     /// Atomically persist a JSON configuration object into storage.
     pub async fn write(&self, value: &Value) -> Result<()> {
+        // create new temp file
         let file = task::spawn_blocking(NamedTempFile::new).await??;
+
+        // write values into temp file
         fs::write(file.path(), serde_json::to_vec(value)?).await?;
 
+        // just one write at a time
         let mut data = self.data.write().await;
         let path = Arc::clone(&self.path);
+
+        // move temp file to target location
         task::spawn_blocking(move || file.persist(&*path)).await??;
         *data = value.clone();
+
+        // all good
         Ok(())
     }
 }
