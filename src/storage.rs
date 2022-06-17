@@ -2,60 +2,49 @@
 //!
 //! This stores a single file in `~/.cadre/config.json`, which is atomically
 //! updated through file system move operations.
-
 use std::{io::ErrorKind, ops::Deref, path::PathBuf, sync::Arc};
 
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
-use tempfile::NamedTempFile;
 use tokio::{fs, sync::RwLock, task};
+
+use s3::bucket::Bucket;
+use s3::creds::Credentials;
 
 /// Object that manages storage persistence.
 #[derive(Clone, Debug)]
 pub struct Storage {
-    data: Arc<RwLock<Value>>,
-    path: Arc<PathBuf>,
+    bucket: Bucket,
 }
 
 impl Storage {
     /// Create a new storage object.
-    pub async fn new() -> Result<Self> {
-        let dir = home::home_dir().context("no home dir")?.join(".cadre");
-        fs::create_dir_all(&dir).await?;
-
-        let path = dir.join("config.json");
-        let value = match fs::read(&path).await {
-            Ok(data) => serde_json::from_slice(&data)?,
-            Err(err) if err.kind() == ErrorKind::NotFound => json!({}),
-            Err(err) => return Err(err.into()),
-        };
+    pub async fn new(bucket_name: String) -> Result<Self> {
+        let region = String::from("us-east-1").parse()?;
+        let credentials = Credentials::default()?;
 
         Ok(Self {
-            data: Arc::new(RwLock::new(value)),
-            path: Arc::new(path),
+            bucket: Bucket::new(&bucket_name, region, credentials)?,
         })
     }
 
-    /// Get the current value of the configuration.
-    pub async fn read(&self) -> impl Deref<Target = Value> + '_ {
-        self.data.read().await
+    /// Get current config template from S3.
+    pub async fn read(&self, path: &str) -> Result<Value> {
+        let (result, _) = self.bucket.get_object(path).await?;
+        let value = Value::from(result);
+        Ok(serde_json::from_value(value)?)
     }
+
+    /// Returns list of available config files from S3.
+    // pub async fn available_configs(&self) -> Result<()> {
+    //     let results = self.bucket.list("".to_string(), None).await?;
+    //     Ok(())
+    // }
 
     /// Atomically persist a JSON configuration object into storage.
     pub async fn write(&self, value: &Value) -> Result<()> {
-        // create new temp file
-        let file = task::spawn_blocking(NamedTempFile::new).await??;
-
-        // write values into temp file
-        fs::write(file.path(), serde_json::to_vec(value)?).await?;
-
-        // just one write at a time
-        let mut data = self.data.write().await;
-        let path = Arc::clone(&self.path);
-
-        // move temp file to target location
-        task::spawn_blocking(move || file.persist(&*path)).await??;
-        *data = value.clone();
+        let content = serde_json::to_vec(value)?;
+        self.bucket.put_object("config.json", &content).await?;
 
         // all good
         Ok(())
