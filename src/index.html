@@ -124,13 +124,29 @@
     <script type="module">
       document.getElementById("base-url").innerText = window.location.origin;
 
+      const environment = "dev"; // TODO (luiscape): change to be a picker
+
       let submitting = false;
       let clearIndicator = 0;
       const submit = document.getElementById("submit");
       const indicator = document.getElementById("indicator");
       const changes = document.getElementById("changes");
 
-      let currentValue = await fetch("/p").then((resp) => resp.json());
+      let currentValue = await fetch(`/c/${environment}`)
+        .then((response) => {
+          if (!response.ok) {
+            console.error("failed to load data from server");
+            return {};
+          }
+          return response.json();
+        })
+        .catch((error) => {
+          console.error(
+            "There has been a problem with your fetch operation:",
+            error
+          );
+        });
+
       let editorValue = currentValue;
 
       function refresh() {
@@ -157,7 +173,7 @@
         submit.disabled = true;
         try {
           const newValue = editorValue;
-          const resp = await fetch("/s3", {
+          const resp = await fetch(`/w/${environment}`, {
             method: "PUT",
             body: JSON.stringify(newValue),
             headers: { "Content-Type": "application/json" },

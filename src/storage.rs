@@ -3,54 +3,89 @@
 //! This stores a single file in `~/.cadre/config.json`, which is atomically
 //! updated through file system move operations.
 use anyhow::Result;
+use bytes::Bytes;
 use serde_json::Value;
 
-use s3::bucket::Bucket;
-use s3::creds::Credentials;
+use std::str::from_utf8;
+
+use aws_config::meta::region::RegionProviderChain;
+use aws_sdk_s3::types::ByteStream;
+use aws_sdk_s3::Client;
 
 /// Object that manages storage persistence.
 #[derive(Clone, Debug)]
 pub struct Storage {
-    bucket: Bucket,
+    client: Client,
+    bucket: String,
 }
 
 impl Storage {
     /// Create a new storage object.
     pub async fn new(bucket_name: String) -> Result<Self> {
-        let region = String::from("us-east-1").parse()?;
-        let credentials = Credentials::default()?;
+        // TODO (luiscape): parametrize region as part of CLI
+        let region_provider = RegionProviderChain::default_provider().or_else("us-east-1");
+        let config = aws_config::from_env().region(region_provider).load().await;
 
         Ok(Self {
-            bucket: Bucket::new(&bucket_name, region, credentials)?,
+            client: Client::new(&config),
+            bucket: String::from(bucket_name),
         })
     }
 
     /// Get current config template from S3.
-    pub async fn read(&self, path: &str) -> Result<Value> {
-        let (result, _) = self.bucket.get_object(path).await?;
-        let value = Value::from(result);
-        Ok(serde_json::from_value(value)?)
+    pub async fn read(&self, environment: &str) -> Result<Value> {
+        println!(" => read environment: '{}'", environment);
+        let key = get_key(environment);
+        let resp = self
+            .client
+            .get_object()
+            .bucket(self.bucket.clone())
+            .key(key)
+            .send()
+            .await?;
+
+        let data = resp.body.collect().await;
+        let bytes = data.unwrap().into_bytes();
+        Ok(serde_json::from_str(from_utf8(&bytes)?)?)
     }
 
     /// Atomically persist a JSON configuration object into storage.
-    pub async fn write(&self, value: &Value) -> Result<()> {
-        let content = serde_json::to_vec(value)?;
-        self.bucket.put_object("config.json", &content).await?;
+    pub async fn write(&self, environment: &String, value: &Value) -> Result<()> {
+        println!(" => writing environment: '{}'", environment);
+        let key = get_key(&environment);
+        let bytes = Bytes::copy_from_slice(&serde_json::to_vec(value)?);
+        let content = ByteStream::from(bytes);
 
-        // all good
+        self.client
+            .put_object()
+            .bucket(self.bucket.clone())
+            .key(key)
+            .body(content)
+            .send()
+            .await?;
+
         Ok(())
     }
 
     /// Returns list of available config files from S3.
     pub async fn list_available_configs(&self) -> Result<Value> {
-        let results = self.bucket.list("".to_string(), None).await?;
+        let objects = self
+            .client
+            .list_objects_v2()
+            .bucket(&self.bucket)
+            .send()
+            .await?;
         let mut configs = Vec::new();
-        for config in results.iter() {
-            for contents in config.contents.iter() {
-                configs.push(contents.key.clone());
-            }
+
+        for obj in objects.contents().unwrap_or_default() {
+            configs.push(obj.key().unwrap());
         }
+
         let value = Value::from(configs);
         Ok(serde_json::from_value(value)?)
     }
+}
+
+fn get_key(environment: &str) -> String {
+    format!("{}.json", environment)
 }
