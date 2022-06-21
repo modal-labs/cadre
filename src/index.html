@@ -91,17 +91,11 @@
 
     <p>
       <em>This is the cadre web interface.</em> To use, edit the JSON
-      configuration below. All updates are made immediately after saving and
-      reflect atomically in application reads.
+      configuration below. Config templates are stored in S3. Secrets are parsed
+      and populated at runtme, then sent back to the user.
     </p>
 
-    <pre><code><span style="color: #7b0091">curl</span> <span id="base-url">$BASE_URL</span>/p/<span style="font-style: italic; color: rgb(179, 80, 0)">[*path]</span></code></pre>
-
-    <p>
-      To programmatically access configuration, use the REST API above. The URL
-      path is a <em>JSON pointer</em> as standardized by
-      <a href="https://datatracker.ietf.org/doc/html/rfc6901">RFC 6901</a>.
-    </p>
+    <pre><code><span style="color: #7b0091">curl</span> <span id="base-url">$BASE_URL</span>/w/<span style="font-style: italic; color: rgb(179, 80, 0)">config.json</span></code></pre>
 
     <div style="margin: 20px 0; display: flex; align-items: center">
       <button id="submit" disabled>Save Changes</button>
