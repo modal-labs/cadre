@@ -2,11 +2,8 @@
 //!
 //! This stores a single file in `~/.cadre/config.json`, which is atomically
 //! updated through file system move operations.
-use std::{io::ErrorKind, ops::Deref, path::PathBuf, sync::Arc};
-
-use anyhow::{Context, Result};
-use serde_json::{json, Value};
-use tokio::{fs, sync::RwLock, task};
+use anyhow::Result;
+use serde_json::Value;
 
 use s3::bucket::Bucket;
 use s3::creds::Credentials;
@@ -35,12 +32,6 @@ impl Storage {
         Ok(serde_json::from_value(value)?)
     }
 
-    /// Returns list of available config files from S3.
-    // pub async fn available_configs(&self) -> Result<()> {
-    //     let results = self.bucket.list("".to_string(), None).await?;
-    //     Ok(())
-    // }
-
     /// Atomically persist a JSON configuration object into storage.
     pub async fn write(&self, value: &Value) -> Result<()> {
         let content = serde_json::to_vec(value)?;
@@ -48,5 +39,18 @@ impl Storage {
 
         // all good
         Ok(())
+    }
+
+    /// Returns list of available config files from S3.
+    pub async fn list_available_configs(&self) -> Result<Value> {
+        let results = self.bucket.list("".to_string(), None).await?;
+        let mut configs = Vec::new();
+        for config in results.iter() {
+            for contents in config.contents.iter() {
+                configs.push(contents.key.clone());
+            }
+        }
+        let value = Value::from(configs);
+        Ok(serde_json::from_value(value)?)
     }
 }
