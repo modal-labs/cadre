@@ -27,3 +27,4 @@ aws-sdk-s3 = "0.13.0"
 aws-sdk-secretsmanager = "0.13.0"
 bytes = { version = "^1", features = ["serde"] }
 async-recursion = "1.0.0"
+regex = "1"

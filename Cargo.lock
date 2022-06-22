@@ -514,6 +514,7 @@ dependencies = [
  "bytes",
  "clap",
  "home",
+ "regex",
  "serde",
  "serde_json",
  "tempfile",

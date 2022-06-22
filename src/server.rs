@@ -33,7 +33,10 @@ async fn get_config_handler(
     if let Some(environment) = params.get("environment") {
         match storage.read(environment).await {
             Ok(value) => Ok(Json(value.clone())),
-            Err(_) => Err(StatusCode::NOT_FOUND),
+            Err(error) => {
+                println!("error: {}", error);
+                Err(StatusCode::NOT_FOUND)
+            }
         }
     } else {
         Err(StatusCode::NOT_ACCEPTABLE)
@@ -45,7 +48,10 @@ async fn get_all_configs_handler(
 ) -> Result<Json<Value>, StatusCode> {
     match storage.list_available_configs().await {
         Ok(value) => Ok(Json(value.clone())),
-        Err(_) => Err(StatusCode::NOT_FOUND),
+        Err(error) => {
+            println!("error: {}", error);
+            Err(StatusCode::NOT_FOUND)
+        }
     }
 }
 

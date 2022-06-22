@@ -13,7 +13,6 @@ pub struct Cli {
     pub command: Commands,
 }
 
-/// Specification of each subcommand used by the worker.
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Start the cadre service

@@ -47,34 +47,32 @@ async fn evaluate(
 ) -> Result<()> {
     // If the value is an array, exit early.
     if value.is_array() {
-        Err(())
+        bail!("arrays cannot be secret values")
     } else if value.is_object() {
         // When value is an object,
         let map = value.as_object_mut().unwrap();
         for (k, v) in map.iter_mut() {
             evaluate(secrets, k, v, template_mark).await?;
         }
-        Ok(())
     } else {
         if key.starts_with(template_mark) {
-            get_aws_secret(secrets, value.as_str()).await?;
+            let _value = String::from(value.as_str().unwrap()).to_lowercase();
+            let secret_key = value.as_str().unwrap();
+            if _value.starts_with("aws(") {
+                let pattern = String::from("aws(");
+                let secret_name = extract_function_value(pattern, secret_key);
+                *value = secrets.get(&secret_name).await?;
+            } else if _value.starts_with("aws_json(") {
+                let pattern = String::from("aws_json(");
+                let secret_name = extract_function_value(pattern, secret_key);
+                *value = secrets.get_as_map(&secret_name).await?;
+            } else {
+            };
         };
-        Ok(())
     };
     Ok(())
 }
 
-/// Gets secret from the AWS secret manager.
-async fn get_aws_secret(secrets: &Secrets, secret_name: Option<&str>) -> Result<()> {
-    match secret_name {
-        Some(secret_name) => {
-            secrets.get(secret_name).await?;
-            println!("value for key: {}", secret_name);
-        }
-        None => {
-            println!("value is none");
-        }
-    }
-
-    Ok(())
+fn extract_function_value(pattern: String, value: &str) -> String {
+    value.replace(&pattern, "").replace(")", "")
 }
