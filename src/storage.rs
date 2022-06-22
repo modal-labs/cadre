@@ -12,6 +12,8 @@ use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::types::ByteStream;
 use aws_sdk_s3::Client;
 
+use crate::template::Template;
+
 /// Object that manages storage persistence.
 #[derive(Clone, Debug)]
 pub struct Storage {
@@ -46,7 +48,12 @@ impl Storage {
 
         let data = resp.body.collect().await;
         let bytes = data.unwrap().into_bytes();
-        Ok(serde_json::from_str(from_utf8(&bytes)?)?)
+        let json = serde_json::from_str(from_utf8(&bytes)?)?;
+
+        let mut templated_json = Template::new(json).await?;
+        templated_json.parse().await?;
+
+        Ok(templated_json.value)
     }
 
     /// Atomically persist a JSON configuration object into storage.

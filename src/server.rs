@@ -15,6 +15,7 @@ use crate::storage::Storage;
 
 /// Web server for handling requests.
 pub async fn server() -> Result<Router> {
+    // TODO(luiscape): parametrize bucket name with CLI argument.
     let storage = Storage::new("modal-cadre-config-store-dev".parse()?).await?;
 
     Ok(Router::new()
