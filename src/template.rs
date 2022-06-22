@@ -5,8 +5,11 @@ use anyhow::Result;
 use async_recursion::async_recursion;
 use serde_json::Value;
 
+use crate::secrets::Secrets;
+
 pub struct Template {
     pub value: Value,
+    secrets: Secrets,
     template_mark: String,
 }
 
@@ -15,6 +18,7 @@ impl Template {
     pub async fn new(value: Value) -> Result<Self> {
         Ok(Self {
             value: value,
+            secrets: Secrets::new(String::from("us-east-1")).await?,
             template_mark: String::from("*"), // Keys that start with this character.
         })
     }
@@ -26,7 +30,7 @@ impl Template {
         } else {
             let map = self.value.as_object_mut().unwrap();
             for (key, value) in map.iter_mut() {
-                evaluate(key, value, &self.template_mark).await?;
+                evaluate(&self.secrets, key, value, &self.template_mark).await?;
             }
             Ok(())
         }
@@ -35,7 +39,12 @@ impl Template {
 
 /// Evaluate key-value pair, executing function if required by template mark.
 #[async_recursion]
-async fn evaluate(key: &String, value: &mut Value, template_mark: &String) -> Result<()> {
+async fn evaluate(
+    secrets: &Secrets,
+    key: &String,
+    value: &mut Value,
+    template_mark: &String,
+) -> Result<()> {
     // If the value is an array, exit early.
     if value.is_array() {
         Err(())
@@ -43,12 +52,12 @@ async fn evaluate(key: &String, value: &mut Value, template_mark: &String) -> Re
         // When value is an object,
         let map = value.as_object_mut().unwrap();
         for (k, v) in map.iter_mut() {
-            evaluate(k, v, template_mark).await?;
+            evaluate(secrets, k, v, template_mark).await?;
         }
         Ok(())
     } else {
         if key.starts_with(template_mark) {
-            get_aws_secret(value.as_str())?;
+            get_aws_secret(secrets, value.as_str()).await?;
         };
         Ok(())
     };
@@ -56,9 +65,10 @@ async fn evaluate(key: &String, value: &mut Value, template_mark: &String) -> Re
 }
 
 /// Gets secret from the AWS secret manager.
-fn get_aws_secret(secret_name: Option<&str>) -> Result<()> {
+async fn get_aws_secret(secrets: &Secrets, secret_name: Option<&str>) -> Result<()> {
     match secret_name {
         Some(secret_name) => {
+            secrets.get(secret_name).await?;
             println!("value for key: {}", secret_name);
         }
         None => {

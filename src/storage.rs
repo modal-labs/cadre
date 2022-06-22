@@ -1,7 +1,6 @@
 //! Persistent, durable storage for cadre configuration.
 //!
-//! This stores a single file in `~/.cadre/config.json`, which is atomically
-//! updated through file system move operations.
+//! This stores JSON templates in a S3 bucket.
 use anyhow::Result;
 use bytes::Bytes;
 use serde_json::Value;
