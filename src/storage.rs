@@ -1,55 +1,97 @@
 //! Persistent, durable storage for cadre configuration.
 //!
-//! This stores a single file in `~/.cadre/config.json`, which is atomically
-//! updated through file system move operations.
+//! This stores JSON templates in a S3 bucket.
+use anyhow::Result;
+use bytes::Bytes;
+use serde_json::Value;
 
-use std::{io::ErrorKind, ops::Deref, path::PathBuf, sync::Arc};
+use std::str::from_utf8;
 
-use anyhow::{Context, Result};
-use serde_json::{json, Value};
-use tempfile::NamedTempFile;
-use tokio::{fs, sync::RwLock, task};
+use aws_config::meta::region::RegionProviderChain;
+use aws_sdk_s3::types::ByteStream;
+use aws_sdk_s3::Client;
+
+use crate::template::Template;
 
 /// Object that manages storage persistence.
 #[derive(Clone, Debug)]
 pub struct Storage {
-    data: Arc<RwLock<Value>>,
-    path: Arc<PathBuf>,
+    client: Client,
+    bucket: String,
 }
 
 impl Storage {
     /// Create a new storage object.
-    pub async fn new() -> Result<Self> {
-        let dir = home::home_dir().context("no home dir")?.join(".cadre");
-        fs::create_dir_all(&dir).await?;
-
-        let path = dir.join("config.json");
-        let value = match fs::read(&path).await {
-            Ok(data) => serde_json::from_slice(&data)?,
-            Err(err) if err.kind() == ErrorKind::NotFound => json!({}),
-            Err(err) => return Err(err.into()),
-        };
+    pub async fn new(bucket_name: String) -> Result<Self> {
+        // TODO (luiscape): parametrize region as part of CLI
+        let region_provider = RegionProviderChain::default_provider().or_else("us-east-1");
+        let config = aws_config::from_env().region(region_provider).load().await;
 
         Ok(Self {
-            data: Arc::new(RwLock::new(value)),
-            path: Arc::new(path),
+            client: Client::new(&config),
+            bucket: String::from(bucket_name),
         })
     }
 
-    /// Get the current value of the configuration.
-    pub async fn read(&self) -> impl Deref<Target = Value> + '_ {
-        self.data.read().await
+    /// Get current config template from S3.
+    pub async fn read(&self, environment: &str) -> Result<Value> {
+        println!(" => read environment: '{}'", environment);
+        let key = get_key(environment);
+        let resp = self
+            .client
+            .get_object()
+            .bucket(self.bucket.clone())
+            .key(key)
+            .send()
+            .await?;
+
+        let data = resp.body.collect().await;
+        let bytes = data.unwrap().into_bytes();
+        let json = serde_json::from_str(from_utf8(&bytes)?)?;
+
+        let mut templated_json = Template::new(json).await?;
+        templated_json.parse().await?;
+
+        Ok(templated_json.value)
     }
 
     /// Atomically persist a JSON configuration object into storage.
-    pub async fn write(&self, value: &Value) -> Result<()> {
-        let file = task::spawn_blocking(NamedTempFile::new).await??;
-        fs::write(file.path(), serde_json::to_vec(value)?).await?;
+    pub async fn write(&self, environment: &String, value: &Value) -> Result<()> {
+        println!(" => writing environment: '{}'", environment);
+        let key = get_key(&environment);
+        let bytes = Bytes::copy_from_slice(&serde_json::to_vec(value)?);
+        let content = ByteStream::from(bytes);
 
-        let mut data = self.data.write().await;
-        let path = Arc::clone(&self.path);
-        task::spawn_blocking(move || file.persist(&*path)).await??;
-        *data = value.clone();
+        self.client
+            .put_object()
+            .bucket(self.bucket.clone())
+            .key(key)
+            .body(content)
+            .send()
+            .await?;
+
         Ok(())
     }
+
+    /// Returns list of available config files from S3.
+    pub async fn list_available_configs(&self) -> Result<Value> {
+        let objects = self
+            .client
+            .list_objects_v2()
+            .bucket(&self.bucket)
+            .send()
+            .await?;
+        let mut configs = Vec::new();
+
+        for obj in objects.contents().unwrap_or_default() {
+            configs.push(obj.key().unwrap());
+        }
+
+        let value = Value::from(configs);
+        Ok(serde_json::from_value(value)?)
+    }
+}
+
+fn get_key(environment: &str) -> String {
+    format!("{}.json", environment)
 }
