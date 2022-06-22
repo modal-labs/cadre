@@ -3,7 +3,7 @@
 use anyhow::Result;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_secretsmanager::{Client, Region};
-use serde_json::{from_str, Map, Value};
+use serde_json::{from_str, Value};
 
 /// Objects that manages the retrieval of secrets.
 #[derive(Clone, Debug)]

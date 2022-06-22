@@ -126,7 +126,7 @@
       const indicator = document.getElementById("indicator");
       const changes = document.getElementById("changes");
 
-      let currentValue = await fetch(`/c/${environment}`)
+      let currentValue = await fetch(`/t/${environment}`)
         .then((response) => {
           if (!response.ok) {
             console.error("failed to load data from server");

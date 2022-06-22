@@ -7,6 +7,7 @@ use serde_json::Value;
 
 use crate::secrets::Secrets;
 
+/// Templated JSON object.
 pub struct Template {
     pub value: Value,
     secrets: Secrets,
@@ -24,15 +25,16 @@ impl Template {
     }
 
     /// Parses JSON map based on template requirements.
-    pub async fn parse(&mut self) -> Result<()> {
+    pub async fn parse(&mut self) -> Result<Value> {
+        let mut parsed_value = self.value.clone();
         if self.value.is_array() {
             bail!("based config objects cannot be arrays")
         } else {
-            let map = self.value.as_object_mut().unwrap();
+            let map = parsed_value.as_object_mut().unwrap();
             for (key, value) in map.iter_mut() {
                 evaluate(&self.secrets, key, value, &self.template_mark).await?;
             }
-            Ok(())
+            Ok(parsed_value)
         }
     }
 }
@@ -55,16 +57,18 @@ async fn evaluate(
             evaluate(secrets, k, v, template_mark).await?;
         }
     } else {
+        // Parse templated function and overwrite the value of the key
+        // in pointer.
         if key.starts_with(template_mark) {
             let _value = String::from(value.as_str().unwrap()).to_lowercase();
             let secret_key = value.as_str().unwrap();
             if _value.starts_with("aws(") {
                 let pattern = String::from("aws(");
-                let secret_name = extract_function_value(pattern, secret_key);
+                let secret_name = _extract_function_value(pattern, secret_key);
                 *value = secrets.get(&secret_name).await?;
             } else if _value.starts_with("aws_json(") {
                 let pattern = String::from("aws_json(");
-                let secret_name = extract_function_value(pattern, secret_key);
+                let secret_name = _extract_function_value(pattern, secret_key);
                 *value = secrets.get_as_map(&secret_name).await?;
             } else {
             };
@@ -73,6 +77,6 @@ async fn evaluate(
     Ok(())
 }
 
-fn extract_function_value(pattern: String, value: &str) -> String {
+fn _extract_function_value(pattern: String, value: &str) -> String {
     value.replace(&pattern, "").replace(")", "")
 }

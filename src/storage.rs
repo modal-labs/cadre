@@ -33,8 +33,28 @@ impl Storage {
         })
     }
 
-    /// Get current config template from S3.
-    pub async fn read(&self, environment: &str) -> Result<Value> {
+    /// Get config template from S3.
+    pub async fn read_template(&self, environment: &str) -> Result<Value> {
+        println!(" => read environment: '{}'", environment);
+        let key = get_key(environment);
+        let resp = self
+            .client
+            .get_object()
+            .bucket(self.bucket.clone())
+            .key(key)
+            .send()
+            .await?;
+
+        let data = resp.body.collect().await;
+        let bytes = data.unwrap().into_bytes();
+        let json = serde_json::from_str(from_utf8(&bytes)?)?;
+
+        let templated_json = Template::new(json).await?;
+        Ok(templated_json.value)
+    }
+
+    /// Get and parse config from S3.
+    pub async fn read_parsed_template(&self, environment: &str) -> Result<Value> {
         println!(" => read environment: '{}'", environment);
         let key = get_key(environment);
         let resp = self
@@ -50,9 +70,9 @@ impl Storage {
         let json = serde_json::from_str(from_utf8(&bytes)?)?;
 
         let mut templated_json = Template::new(json).await?;
-        templated_json.parse().await?;
+        let parsed_value = templated_json.parse().await?;
 
-        Ok(templated_json.value)
+        Ok(parsed_value)
     }
 
     /// Atomically persist a JSON configuration object into storage.

@@ -21,9 +21,27 @@ pub async fn server() -> Result<Router> {
     Ok(Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))
         .route("/w/:environment", put(put_handler))
+        .route("/t/:environment", get(get_template_handler))
         .route("/c", get(get_all_configs_handler))
         .route("/c/:environment", get(get_config_handler))
         .layer(Extension(storage)))
+}
+
+async fn get_template_handler(
+    Extension(storage): Extension<Storage>,
+    Path(params): Path<HashMap<String, String>>,
+) -> Result<Json<Value>, StatusCode> {
+    if let Some(environment) = params.get("environment") {
+        match storage.read_template(environment).await {
+            Ok(value) => Ok(Json(value.clone())),
+            Err(error) => {
+                println!("error: {}", error);
+                Err(StatusCode::NOT_FOUND)
+            }
+        }
+    } else {
+        Err(StatusCode::NOT_ACCEPTABLE)
+    }
 }
 
 async fn get_config_handler(
@@ -31,7 +49,7 @@ async fn get_config_handler(
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Value>, StatusCode> {
     if let Some(environment) = params.get("environment") {
-        match storage.read(environment).await {
+        match storage.read_parsed_template(environment).await {
             Ok(value) => Ok(Json(value.clone())),
             Err(error) => {
                 println!("error: {}", error);
