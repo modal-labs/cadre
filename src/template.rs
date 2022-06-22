@@ -3,7 +3,7 @@
 use anyhow::bail;
 use anyhow::Result;
 use async_recursion::async_recursion;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 use crate::secrets::Secrets;
 
@@ -30,7 +30,7 @@ impl Template {
         if self.value.is_array() {
             bail!("based config objects cannot be arrays")
         } else {
-            let map = parsed_value.as_object_mut().unwrap();
+            let mut map = parsed_value.as_object_mut().unwrap();
             for (key, value) in map.iter_mut() {
                 evaluate(&self.secrets, key, value, &self.template_mark).await?;
             }
@@ -74,6 +74,29 @@ async fn evaluate(
             };
         };
     };
+
+    remove_template_marks(template_mark, value).await?;
+    Ok(())
+}
+
+/// Replace map in memory with equivalent map but with replaced templated keys.
+#[async_recursion]
+async fn remove_template_marks(template_mark: &String, value: &mut Value) -> Result<()> {
+    let map = value.as_object_mut().unwrap();
+    for (k, v) in map.iter_mut() {
+        if k.starts_with(template_mark) {
+            *k = k.replace(template_mark, "");
+        }
+        if v.is_array() {
+        } else if v.is_object() {
+            remove_template_marks(template_mark, v).await?;
+        } else {
+            map[k] = v;
+        }
+    }
+    // TOOD: from Map to serde_json::Value
+    *value = Value::from(map);
+
     Ok(())
 }
 
