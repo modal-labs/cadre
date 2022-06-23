@@ -53,7 +53,6 @@ async fn evaluate(
     if value.is_array() {
         bail!("arrays cannot be secret values")
     } else if value.is_object() {
-        // When value is an object,
         let map = value.as_object_mut().unwrap();
         for (k, v) in map.iter_mut() {
             evaluate(secrets, k, v, template_mark).await?;
@@ -84,9 +83,10 @@ fn _extract_function_value(pattern: String, value: &str) -> String {
     value.replace(&pattern, "").replace(')', "")
 }
 
-async fn remove_template_marks(template_mark: &String, map: &mut Map<String, Value>) {
+/// Remove the template mark from keys.
+async fn remove_template_marks(mark: &String, map: &mut Map<String, Value>) {
     *map = std::mem::take(map)
         .into_iter()
-        .map(|(k, v)| (k.replace(template_mark, ""), v))
+        .map(|(k, v)| (k.replace(mark, ""), v))
         .collect();
 }
