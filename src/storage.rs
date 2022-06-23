@@ -36,7 +36,7 @@ impl Storage {
     /// Get config template from S3.
     pub async fn read_template(&self, environment: &str) -> Result<Value> {
         println!(" => read environment: '{}'", environment);
-        let key = get_key(environment);
+        let key = add_json_extension(environment);
         let resp = self
             .client
             .get_object()
@@ -56,7 +56,7 @@ impl Storage {
     /// Get and parse config from S3.
     pub async fn read_parsed_template(&self, environment: &str) -> Result<Value> {
         println!(" => read environment: '{}'", environment);
-        let key = get_key(environment);
+        let key = add_json_extension(environment);
         let resp = self
             .client
             .get_object()
@@ -78,7 +78,7 @@ impl Storage {
     /// Atomically persist a JSON configuration object into storage.
     pub async fn write(&self, environment: &String, value: &Value) -> Result<()> {
         println!(" => writing environment: '{}'", environment);
-        let key = get_key(environment);
+        let key = add_json_extension(environment);
         let bytes = Bytes::copy_from_slice(&serde_json::to_vec(value)?);
         let content = ByteStream::from(bytes);
 
@@ -112,6 +112,6 @@ impl Storage {
     }
 }
 
-fn get_key(environment: &str) -> String {
+fn add_json_extension(environment: &str) -> String {
     format!("{}.json", environment)
 }
