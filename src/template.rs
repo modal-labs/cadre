@@ -80,29 +80,6 @@ async fn evaluate(
     Ok(())
 }
 
-/// Replace map in memory with equivalent map but with replaced templated keys.
-// #[async_recursion]
-// async fn remove_template_marks(template_mark: &String, value: &mut Value) -> Result<()> {
-//     let map = value.as_object_mut().unwrap();
-//     let mut _map = map.clone();
-//     for (k, v) in map.iter_mut() {
-//         if v.is_array() {
-//         } else if v.is_object() {
-//             remove_template_marks(template_mark, v).await?;
-//         } else {
-//             if k.starts_with(template_mark) {
-//                 let mut _k = k.clone();
-//                 _k = k.replace(template_mark, "");
-//                 _map[&_k] = v.clone();
-//             }
-//         }
-//     }
-//     // TOOD: from Map to serde_json::Value
-//     *value = Value::Object(_map.clone());
-
-//     Ok(())
-// }
-
 fn _extract_function_value(pattern: String, value: &str) -> String {
     value.replace(&pattern, "").replace(')', "")
 }
