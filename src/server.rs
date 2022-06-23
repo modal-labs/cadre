@@ -24,6 +24,7 @@ pub async fn server() -> Result<Router> {
         .route("/t/:environment", get(get_template_handler))
         .route("/c", get(get_all_configs_handler))
         .route("/c/:environment", get(get_config_handler))
+        .route("/ping", get(get_ping_handler))
         .layer(Extension(storage)))
 }
 
@@ -89,4 +90,9 @@ async fn put_handler(
     } else {
         Err(StatusCode::NOT_ACCEPTABLE)
     }
+}
+
+async fn get_ping_handler() -> Result<Json<Value>, StatusCode> {
+    let message = String::from("OK");
+    Ok(Json(Value::from(message)))
 }
