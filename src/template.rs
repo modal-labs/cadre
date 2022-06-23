@@ -18,7 +18,7 @@ impl Template {
     /// Creates new template based on serde JSON Value.
     pub async fn new(value: Value) -> Result<Self> {
         Ok(Self {
-            value: value,
+            value,
             secrets: Secrets::new(String::from("us-east-1")).await?,
             template_mark: String::from("*"), // Keys that start with this character.
         })
@@ -30,10 +30,12 @@ impl Template {
         if self.value.is_array() {
             bail!("based config objects cannot be arrays")
         } else {
-            let mut map = parsed_value.as_object_mut().unwrap();
+            let map = parsed_value.as_object_mut().unwrap();
             for (key, value) in map.iter_mut() {
                 evaluate(&self.secrets, key, value, &self.template_mark).await?;
             }
+
+            remove_template_marks(&self.template_mark, parsed_value.as_object_mut().unwrap()).await;
             Ok(parsed_value)
         }
     }
@@ -43,7 +45,7 @@ impl Template {
 #[async_recursion]
 async fn evaluate(
     secrets: &Secrets,
-    key: &String,
+    key: &'life1 str,
     value: &mut Value,
     template_mark: &String,
 ) -> Result<()> {
@@ -75,31 +77,39 @@ async fn evaluate(
         };
     };
 
-    remove_template_marks(template_mark, value).await?;
     Ok(())
 }
 
 /// Replace map in memory with equivalent map but with replaced templated keys.
-#[async_recursion]
-async fn remove_template_marks(template_mark: &String, value: &mut Value) -> Result<()> {
-    let map = value.as_object_mut().unwrap();
-    for (k, v) in map.iter_mut() {
-        if k.starts_with(template_mark) {
-            *k = k.replace(template_mark, "");
-        }
-        if v.is_array() {
-        } else if v.is_object() {
-            remove_template_marks(template_mark, v).await?;
-        } else {
-            map[k] = v;
-        }
-    }
-    // TOOD: from Map to serde_json::Value
-    *value = Value::from(map);
+// #[async_recursion]
+// async fn remove_template_marks(template_mark: &String, value: &mut Value) -> Result<()> {
+//     let map = value.as_object_mut().unwrap();
+//     let mut _map = map.clone();
+//     for (k, v) in map.iter_mut() {
+//         if v.is_array() {
+//         } else if v.is_object() {
+//             remove_template_marks(template_mark, v).await?;
+//         } else {
+//             if k.starts_with(template_mark) {
+//                 let mut _k = k.clone();
+//                 _k = k.replace(template_mark, "");
+//                 _map[&_k] = v.clone();
+//             }
+//         }
+//     }
+//     // TOOD: from Map to serde_json::Value
+//     *value = Value::Object(_map.clone());
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 fn _extract_function_value(pattern: String, value: &str) -> String {
-    value.replace(&pattern, "").replace(")", "")
+    value.replace(&pattern, "").replace(')', "")
+}
+
+async fn remove_template_marks(template_mark: &String, map: &mut Map<String, Value>) {
+    *map = std::mem::take(map)
+        .into_iter()
+        .map(|(k, v)| (k.replace(template_mark, ""), v))
+        .collect();
 }

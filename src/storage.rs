@@ -22,14 +22,14 @@ pub struct Storage {
 
 impl Storage {
     /// Create a new storage object.
-    pub async fn new(bucket_name: String) -> Result<Self> {
+    pub async fn new(bucket: String) -> Result<Self> {
         // TODO (luiscape): parametrize region as part of CLI
         let region_provider = RegionProviderChain::default_provider().or_else("us-east-1");
         let config = aws_config::from_env().region(region_provider).load().await;
 
         Ok(Self {
             client: Client::new(&config),
-            bucket: String::from(bucket_name),
+            bucket,
         })
     }
 
@@ -78,7 +78,7 @@ impl Storage {
     /// Atomically persist a JSON configuration object into storage.
     pub async fn write(&self, environment: &String, value: &Value) -> Result<()> {
         println!(" => writing environment: '{}'", environment);
-        let key = get_key(&environment);
+        let key = get_key(environment);
         let bytes = Bytes::copy_from_slice(&serde_json::to_vec(value)?);
         let content = ByteStream::from(bytes);
 

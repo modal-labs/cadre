@@ -33,7 +33,7 @@ async fn get_template_handler(
 ) -> Result<Json<Value>, StatusCode> {
     if let Some(environment) = params.get("environment") {
         match storage.read_template(environment).await {
-            Ok(value) => Ok(Json(value.clone())),
+            Ok(value) => Ok(Json(value)),
             Err(error) => {
                 println!("error: {}", error);
                 Err(StatusCode::NOT_FOUND)
@@ -50,7 +50,7 @@ async fn get_config_handler(
 ) -> Result<Json<Value>, StatusCode> {
     if let Some(environment) = params.get("environment") {
         match storage.read_parsed_template(environment).await {
-            Ok(value) => Ok(Json(value.clone())),
+            Ok(value) => Ok(Json(value)),
             Err(error) => {
                 println!("error: {}", error);
                 Err(StatusCode::NOT_FOUND)
@@ -65,7 +65,7 @@ async fn get_all_configs_handler(
     Extension(storage): Extension<Storage>,
 ) -> Result<Json<Value>, StatusCode> {
     match storage.list_available_configs().await {
-        Ok(value) => Ok(Json(value.clone())),
+        Ok(value) => Ok(Json(value)),
         Err(error) => {
             println!("error: {}", error);
             Err(StatusCode::NOT_FOUND)
@@ -79,7 +79,7 @@ async fn put_handler(
     body: Json<Value>,
 ) -> Result<StatusCode, StatusCode> {
     if let Some(environment) = params.get("environment") {
-        match storage.write(&environment, &body).await {
+        match storage.write(environment, &body).await {
             Ok(()) => Ok(StatusCode::OK),
             Err(error) => {
                 println!("{}", error);
