@@ -5,6 +5,7 @@ use anyhow::Result;
 use bytes::Bytes;
 use serde_json::Value;
 
+use async_recursion::async_recursion;
 use std::str::from_utf8;
 
 use aws_config::meta::region::RegionProviderChain;
@@ -34,9 +35,9 @@ impl Storage {
         })
     }
 
-    /// Get config template from S3.
-    pub async fn read_template(&self, environment: &str) -> Result<Value> {
+    async fn fetch_object(&self, environment: &str) -> Result<Value> {
         println!(" => read environment: '{}'", environment);
+
         let key = add_json_extension(environment);
         let resp = self
             .client
@@ -50,28 +51,48 @@ impl Storage {
         let bytes = data.unwrap().into_bytes();
         let json = serde_json::from_str(from_utf8(&bytes)?)?;
 
+        Ok(json)
+    }
+
+    /// Merges requested template with default if required.
+    async fn merge_defaults(&self, templated_json: Template, environment: &str) -> Result<Value> {
+        let value = match self.default_template.clone() {
+            _ if self.default_template == Option::from(environment.to_string()) => {
+                templated_json.value
+            }
+            Some(v) => {
+                let mut d_template = self.read_template(&v).await?;
+                merge_values(&mut d_template, &templated_json.value);
+                d_template
+            }
+            None => templated_json.value,
+        };
+
+        Ok(value)
+    }
+
+    /// Get config template from S3.
+    #[async_recursion]
+    pub async fn read_template(&self, environment: &str) -> Result<Value> {
+        let json = self.fetch_object(environment).await?;
         let templated_json = Template::new(json).await?;
-        Ok(templated_json.value)
+        let value = self.merge_defaults(templated_json, environment).await?;
+
+        Ok(value)
     }
 
     /// Get and parse config from S3.
     pub async fn read_parsed_template(&self, environment: &str) -> Result<Value> {
         println!(" => read environment: '{}'", environment);
-        let key = add_json_extension(environment);
-        let resp = self
-            .client
-            .get_object()
-            .bucket(self.bucket.clone())
-            .key(key)
-            .send()
-            .await?;
 
-        let data = resp.body.collect().await;
-        let bytes = data.unwrap().into_bytes();
-        let json = serde_json::from_str(from_utf8(&bytes)?)?;
+        // Get object from S3 and merge with defaults.
+        let json = self.fetch_object(environment).await?;
+        let templated_json = Template::new(json).await?;
+        let merged_value = self.merge_defaults(templated_json, environment).await?;
 
-        let mut templated_json = Template::new(json).await?;
-        let parsed_value = templated_json.parse().await?;
+        // Parse the resulting templatet into values.
+        let mut merged_template = Template::new(merged_value).await?;
+        let parsed_value = merged_template.parse().await?;
 
         Ok(parsed_value)
     }
@@ -115,4 +136,19 @@ impl Storage {
 
 fn add_json_extension(environment: &str) -> String {
     format!("{}.json", environment)
+}
+
+// Merges two serde_json::Value objects.
+// Reference: https://github.com/serde-rs/json/issues/377#issuecomment-341490464
+fn merge_values(a: &mut Value, b: &Value) {
+    match (a, b) {
+        (&mut Value::Object(ref mut a), &Value::Object(ref b)) => {
+            for (k, v) in b {
+                merge_values(a.entry(k.clone()).or_insert(Value::Null), v);
+            }
+        }
+        (a, b) => {
+            *a = b.clone();
+        }
+    }
 }
