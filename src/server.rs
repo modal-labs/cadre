@@ -14,9 +14,8 @@ use std::collections::HashMap;
 use crate::storage::Storage;
 
 /// Web server for handling requests.
-pub async fn server() -> Result<Router> {
-    // TODO(luiscape): parametrize bucket name with CLI argument.
-    let storage = Storage::new("modal-cadre-config-store-dev".parse()?).await?;
+pub async fn server(bucket: String, default_template: Option<String>) -> Result<Router> {
+    let storage = Storage::new(bucket.parse()?, default_template).await?;
 
     Ok(Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))

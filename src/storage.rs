@@ -18,18 +18,19 @@ use crate::template::Template;
 pub struct Storage {
     client: Client,
     bucket: String,
+    default_template: Option<String>,
 }
 
 impl Storage {
     /// Create a new storage object.
-    pub async fn new(bucket: String) -> Result<Self> {
-        // TODO (luiscape): parametrize region as part of CLI
-        let region_provider = RegionProviderChain::default_provider().or_else("us-east-1");
+    pub async fn new(bucket: String, default_template: Option<String>) -> Result<Self> {
+        let region_provider = RegionProviderChain::default_provider();
         let config = aws_config::from_env().region(region_provider).load().await;
 
         Ok(Self {
             client: Client::new(&config),
             bucket,
+            default_template,
         })
     }
 
