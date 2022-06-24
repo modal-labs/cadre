@@ -1,8 +1,8 @@
 //! Interface for secret retrieval from the AWS Secret Manager service.;
 
 use anyhow::Result;
-use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_secretsmanager::{Client, Region};
+use aws_sdk_secretsmanager::Client;
+use aws_types::sdk_config::SdkConfig;
 use serde_json::{from_str, Value};
 
 /// Objects that manages the retrieval of secrets.
@@ -13,11 +13,8 @@ pub struct Secrets {
 
 impl Secrets {
     /// Creates new instance of secrets manager.
-    pub async fn new(region: String) -> Result<Self> {
-        let region_provider = RegionProviderChain::first_try(Region::new(region));
-
-        let shared_config = aws_config::from_env().region(region_provider).load().await;
-        let client = Client::new(&shared_config);
+    pub async fn new(aws_config: &SdkConfig) -> Result<Self> {
+        let client = Client::new(aws_config);
 
         Ok(Self { client })
     }

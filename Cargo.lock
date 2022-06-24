@@ -510,6 +510,7 @@ dependencies = [
  "aws-config",
  "aws-sdk-s3",
  "aws-sdk-secretsmanager",
+ "aws-types",
  "axum",
  "bytes",
  "clap",

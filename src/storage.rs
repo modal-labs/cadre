@@ -11,6 +11,7 @@ use std::str::from_utf8;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::types::ByteStream;
 use aws_sdk_s3::Client;
+use aws_types::sdk_config::SdkConfig;
 
 use crate::template::Template;
 
@@ -20,6 +21,7 @@ pub struct Storage {
     client: Client,
     bucket: String,
     default_template: Option<String>,
+    aws_config: SdkConfig,
 }
 
 impl Storage {
@@ -32,6 +34,7 @@ impl Storage {
             client: Client::new(&config),
             bucket,
             default_template,
+            aws_config: config,
         })
     }
 
@@ -75,7 +78,7 @@ impl Storage {
     #[async_recursion]
     pub async fn read_template(&self, environment: &str) -> Result<Value> {
         let json = self.fetch_object(environment).await?;
-        let templated_json = Template::new(json).await?;
+        let templated_json = Template::new(&self.aws_config, json).await?;
         let value = self.merge_defaults(templated_json, environment).await?;
 
         Ok(value)
@@ -87,11 +90,11 @@ impl Storage {
 
         // Get object from S3 and merge with defaults.
         let json = self.fetch_object(environment).await?;
-        let templated_json = Template::new(json).await?;
+        let templated_json = Template::new(&self.aws_config, json).await?;
         let merged_value = self.merge_defaults(templated_json, environment).await?;
 
         // Parse the resulting templatet into values.
-        let mut merged_template = Template::new(merged_value).await?;
+        let mut merged_template = Template::new(&self.aws_config, merged_value).await?;
         let parsed_value = merged_template.parse().await?;
 
         Ok(parsed_value)

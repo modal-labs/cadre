@@ -3,6 +3,7 @@
 use anyhow::bail;
 use anyhow::Result;
 use async_recursion::async_recursion;
+use aws_types::sdk_config::SdkConfig;
 use serde_json::{Map, Value};
 
 use crate::secrets::Secrets;
@@ -16,10 +17,10 @@ pub struct Template {
 
 impl Template {
     /// Creates new template based on serde JSON Value.
-    pub async fn new(value: Value) -> Result<Self> {
+    pub async fn new(aws_config: &SdkConfig, value: Value) -> Result<Self> {
         Ok(Self {
             value,
-            secrets: Secrets::new(String::from("us-east-1")).await?,
+            secrets: Secrets::new(aws_config).await?,
             template_mark: String::from("*"), // Keys that start with this character.
         })
     }
