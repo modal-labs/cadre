@@ -13,7 +13,7 @@ pub struct CadreClient {
     origin: String,
 }
 
-const DEFAULT_ORIGIN: &str = "http://configs.modal.internal";
+pub const DEFAULT_ORIGIN: &str = "http://configs.modal.internal";
 
 impl CadreClient {
     /// Create a new file client object pointing at a given HTTP origin.
