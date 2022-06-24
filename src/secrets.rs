@@ -33,14 +33,9 @@ impl Secrets {
 
         // Non-existing secrets are replaced with empty strings. This may be confusing.
         // Return error if this causes issues.
-        let secret = resp.secret_string().unwrap_or("");
-        Ok(Value::from(secret))
-    }
-
-    /// Fetches secret from the AWS Secret Manager returning as Value.
-    pub async fn get_as_map(&self, name: &str) -> Result<Value> {
-        let secret = self.get(name).await?;
+        let secret = Value::from(resp.secret_string().unwrap_or(""));
         let value = from_str(secret.as_str().unwrap())?;
+
         Ok(value)
     }
 }

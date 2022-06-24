@@ -65,22 +65,14 @@ async fn evaluate(
             let secret_key = value.as_str().unwrap();
             if _value.starts_with("aws(") {
                 let pattern = String::from("aws(");
-                let secret_name = _extract_function_value(pattern, secret_key);
+                let secret_name = secret_key.replace(&pattern, "").replace(')', "");
                 *value = secrets.get(&secret_name).await?;
-            } else if _value.starts_with("aws_json(") {
-                let pattern = String::from("aws_json(");
-                let secret_name = _extract_function_value(pattern, secret_key);
-                *value = secrets.get_as_map(&secret_name).await?;
             } else {
             };
         };
     };
 
     Ok(())
-}
-
-fn _extract_function_value(pattern: String, value: &str) -> String {
-    value.replace(&pattern, "").replace(')', "")
 }
 
 /// Remove the template mark from keys.
