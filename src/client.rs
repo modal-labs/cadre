@@ -13,14 +13,16 @@ pub struct CadreClient {
     origin: String,
 }
 
+const DEFAULT_ORIGIN: &str = "http://configs.modal.internal";
+
 impl CadreClient {
     /// Create a new file client object pointing at a given HTTP origin.
-    pub fn new(origin: &str) -> Self {
+    pub fn new(origin: Option<&str>) -> Self {
         let mut connector = HttpConnector::new();
         connector.set_nodelay(true);
         Self {
             client: Client::builder().build(connector),
-            origin: origin.into(),
+            origin: origin.unwrap_or(DEFAULT_ORIGIN).into(), // TODO(luiscape): use env var for configuring dynamically.
         }
     }
 
