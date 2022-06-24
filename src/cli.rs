@@ -17,6 +17,10 @@ pub struct Cli {
 pub enum Commands {
     /// Start the cadre service
     Server {
+        /// Port to serve cadre on.
+        #[clap(short, long, value_parser, default_value = "3000")]
+        port: String,
+
         /// Bucket to use for storing cadre templated JSON files.
         #[clap(short, long, value_parser)]
         bucket: String,
@@ -33,16 +37,17 @@ impl Cli {
     pub async fn run(self) -> Result<()> {
         match self.command {
             Commands::Server {
+                port,
                 bucket,
                 default_template,
-            } => run_server(bucket, default_template).await?,
+            } => run_server(port, bucket, default_template).await?,
         }
         Ok(())
     }
 }
 
-async fn run_server(bucket: String, default_template: Option<String>) -> Result<()> {
-    let server_addr = String::from("0.0.0.0:3000");
+async fn run_server(port: String, bucket: String, default_template: Option<String>) -> Result<()> {
+    let server_addr = String::from(format!("0.0.0.0:{}", port));
     println!(" => running cadre at: {}", server_addr);
     let app = server(bucket, default_template).await?;
     axum::Server::bind(&server_addr.parse()?)
