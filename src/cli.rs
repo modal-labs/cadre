@@ -47,7 +47,7 @@ impl Cli {
 }
 
 async fn run_server(port: String, bucket: String, default_template: Option<String>) -> Result<()> {
-    let server_addr = String::from(format!("0.0.0.0:{}", port));
+    let server_addr = format!("0.0.0.0:{}", port);
     println!(" => running cadre at: {}", server_addr);
     let app = server(bucket, default_template).await?;
     axum::Server::bind(&server_addr.parse()?)
