@@ -16,5 +16,3 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 RUN --mount=type=cache,target=/home/root/app/target \
     cp target/release/cadre /usr/bin
 
-ENTRYPOINT [ "cadre" ]
-CMD ["server"]
