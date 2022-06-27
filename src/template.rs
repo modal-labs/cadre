@@ -34,9 +34,9 @@ impl Template {
             let map = parsed_value.as_object_mut().unwrap();
             for (key, value) in map.iter_mut() {
                 evaluate(&self.secrets, key, value, &self.template_mark).await?;
-                remove_template_marks(&self.template_mark, value.as_object_mut().unwrap()).await;
             }
 
+            remove_template_marks(&self.template_mark, parsed_value.as_object_mut().unwrap()).await;
             Ok(parsed_value)
         }
     }
@@ -77,7 +77,7 @@ async fn evaluate(
 }
 
 /// Remove the template mark from keys.
-async fn remove_template_marks(mark: &String, map: &mut Map<String, Value>) {
+pub async fn remove_template_marks(mark: &String, map: &mut Map<String, Value>) {
     *map = std::mem::take(map)
         .into_iter()
         .map(|(k, v)| (k.replace(mark, ""), v))

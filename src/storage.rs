@@ -57,14 +57,25 @@ impl Storage {
     }
 
     /// Merges requested template with default if required.
-    async fn merge_defaults(&self, templated_json: Template, environment: &str) -> Result<Value> {
+    async fn merge_with_defaults(
+        &self,
+        templated_json: Template,
+        environment: &str,
+        parse: bool,
+    ) -> Result<Value> {
         let value = match self.default_template.clone() {
             _ if self.default_template == Option::from(environment.to_string()) => {
                 templated_json.value
             }
             Some(v) => {
-                let mut d_template = self.read_template(&v).await?;
-                merge_values(&mut d_template, &templated_json.value);
+                let mut d_template: Value;
+                if parse == true {
+                    d_template = self.read_parsed_template(&v).await?;
+                    merge_values(&mut d_template, &templated_json.value);
+                } else {
+                    d_template = self.read_template(&v).await?;
+                    merge_values(&mut d_template, &templated_json.value);
+                }
                 d_template
             }
             None => templated_json.value,
@@ -78,19 +89,24 @@ impl Storage {
     pub async fn read_template(&self, environment: &str) -> Result<Value> {
         let json = self.fetch_object(environment).await?;
         let templated_json = Template::new(&self.aws_config, json).await?;
-        let value = self.merge_defaults(templated_json, environment).await?;
+        let value = self
+            .merge_with_defaults(templated_json, environment, false)
+            .await?;
 
         Ok(value)
     }
 
     /// Get and parse config from S3.
+    #[async_recursion]
     pub async fn read_parsed_template(&self, environment: &str) -> Result<Value> {
         println!(" => read environment: '{}'", environment);
 
         // Get object from S3 and merge with defaults.
         let json = self.fetch_object(environment).await?;
         let templated_json = Template::new(&self.aws_config, json).await?;
-        let merged_value = self.merge_defaults(templated_json, environment).await?;
+        let merged_value = self
+            .merge_with_defaults(templated_json, environment, true)
+            .await?;
 
         // Parse the resulting templatet into values.
         let mut merged_template = Template::new(&self.aws_config, merged_value).await?;
