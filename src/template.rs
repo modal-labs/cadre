@@ -34,9 +34,9 @@ impl Template {
             let map = parsed_value.as_object_mut().unwrap();
             for (key, value) in map.iter_mut() {
                 evaluate(&self.secrets, key, value, &self.template_mark).await?;
+                remove_template_marks(&self.template_mark, value.as_object_mut().unwrap()).await;
             }
 
-            remove_template_marks(&self.template_mark, parsed_value.as_object_mut().unwrap()).await;
             Ok(parsed_value)
         }
     }
