@@ -30,7 +30,7 @@ jobs:
           toolchain: stable
           components: rustfmt
 
-      - run: cargo fmt -- --check
+      - run: cargo +nightly fmt -- --check
 
   clippy:
     name: Clippy
