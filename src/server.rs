@@ -4,12 +4,13 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+use std::collections::HashMap;
+
 use anyhow::Result;
 use axum::extract::{Extension, Path};
 use axum::routing::{get, put};
 use axum::{http::StatusCode, response::Html, Json, Router};
 use serde_json::Value;
-use std::collections::HashMap;
 
 use crate::storage::Storage;
 

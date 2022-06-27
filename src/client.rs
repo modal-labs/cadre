@@ -22,7 +22,8 @@ impl CadreClient {
         connector.set_nodelay(true);
         Self {
             client: Client::builder().build(connector),
-            origin: origin.unwrap_or(DEFAULT_ORIGIN).into(), // TODO(luiscape): use env var for configuring dynamically.
+            origin: origin.unwrap_or(DEFAULT_ORIGIN).into(), /* TODO(luiscape): use env var for
+                                                              * configuring dynamically. */
         }
     }
 

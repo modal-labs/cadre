@@ -1,17 +1,16 @@
 //! Persistent, durable storage for cadre configuration.
 //!
 //! This stores JSON templates in a S3 bucket.
-use anyhow::Result;
-use bytes::Bytes;
-use serde_json::Value;
-
-use async_recursion::async_recursion;
 use std::str::from_utf8;
 
+use anyhow::Result;
+use async_recursion::async_recursion;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::types::ByteStream;
 use aws_sdk_s3::Client;
 use aws_types::sdk_config::SdkConfig;
+use bytes::Bytes;
+use serde_json::Value;
 
 use crate::template::Template;
 
@@ -129,7 +128,8 @@ impl Storage {
         let mut configs = Vec::new();
 
         for obj in objects.contents().unwrap_or_default() {
-            // only return json files to users; remove extension for easy subsequent operations
+            // only return json files to users; remove extension for easy subsequent
+            // operations
             let object_name = obj.key().unwrap();
             if object_name.ends_with("json") {
                 configs.push(object_name.replace(".json", ""))

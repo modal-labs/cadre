@@ -1,8 +1,9 @@
 //! Implementation of the cadre command-line interface.
 
-use crate::server::server;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+
+use crate::server::server;
 
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
