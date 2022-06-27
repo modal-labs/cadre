@@ -129,7 +129,12 @@ impl Storage {
         let mut configs = Vec::new();
 
         for obj in objects.contents().unwrap_or_default() {
-            configs.push(obj.key().unwrap());
+            // only return json files to users; remove extension for easy subsequent operations
+            let object_name = obj.key().unwrap();
+            if object_name.ends_with("json") {
+                configs.push(object_name.replace(".json", ""))
+            } else {
+            }
         }
 
         let value = Value::from(configs);
