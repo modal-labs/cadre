@@ -69,7 +69,7 @@ impl Storage {
             }
             Some(v) => {
                 let mut d_template: Value;
-                if parse == true {
+                if parse {
                     d_template = self.read_parsed_template(&v).await?;
                     merge_values(&mut d_template, &templated_json.value);
                 } else {
