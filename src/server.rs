@@ -11,6 +11,7 @@ use axum::extract::{Extension, Path};
 use axum::routing::{get, put};
 use axum::{http::StatusCode, response::Html, Json, Router};
 use serde_json::Value;
+use tracing::{error, warn};
 
 use crate::storage::Storage;
 
@@ -24,7 +25,7 @@ pub async fn server(bucket: String, default_template: Option<String>) -> Result<
         .route("/t/:environment", get(get_template_handler))
         .route("/c", get(get_all_configs_handler))
         .route("/c/:environment", get(get_config_handler))
-        .route("/ping", get(get_ping_handler))
+        .route("/ping", get(|| async { "cadre ok" }))
         .layer(Extension(storage)))
 }
 
@@ -35,8 +36,8 @@ async fn get_template_handler(
     if let Some(environment) = params.get("environment") {
         match storage.read_template(environment).await {
             Ok(value) => Ok(Json(value)),
-            Err(error) => {
-                println!("error: {}", error);
+            Err(err) => {
+                warn!(%environment, ?err, "problem getting template");
                 Err(StatusCode::NOT_FOUND)
             }
         }
@@ -52,8 +53,8 @@ async fn get_config_handler(
     if let Some(environment) = params.get("environment") {
         match storage.read_parsed_template(environment).await {
             Ok(value) => Ok(Json(value)),
-            Err(error) => {
-                println!("error: {}", error);
+            Err(err) => {
+                warn!(%environment, ?err, "problem reading config");
                 Err(StatusCode::NOT_FOUND)
             }
         }
@@ -67,8 +68,8 @@ async fn get_all_configs_handler(
 ) -> Result<Json<Value>, StatusCode> {
     match storage.list_available_configs().await {
         Ok(value) => Ok(Json(value)),
-        Err(error) => {
-            println!("error: {}", error);
+        Err(err) => {
+            warn!(?err, "problem reading all configs");
             Err(StatusCode::NOT_FOUND)
         }
     }
@@ -82,17 +83,12 @@ async fn put_handler(
     if let Some(environment) = params.get("environment") {
         match storage.write(environment, &body).await {
             Ok(()) => Ok(StatusCode::OK),
-            Err(error) => {
-                println!("{}", error);
+            Err(err) => {
+                error!(?err, "could not put config");
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
     } else {
         Err(StatusCode::NOT_ACCEPTABLE)
     }
-}
-
-async fn get_ping_handler() -> Result<Json<Value>, StatusCode> {
-    let message = String::from("OK");
-    Ok(Json(Value::from(message)))
 }

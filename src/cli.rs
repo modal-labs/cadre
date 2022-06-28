@@ -4,6 +4,7 @@ use std::net::{Ipv6Addr, SocketAddr};
 
 use anyhow::Result;
 use clap::Parser;
+use tracing::info;
 
 use crate::server::server;
 
@@ -34,10 +35,10 @@ impl Args {
 async fn run_server(port: u16, bucket: String, default_template: Option<String>) -> Result<()> {
     let app = server(bucket, default_template).await?;
 
-    let server_addr: SocketAddr = (Ipv6Addr::UNSPECIFIED, port).into();
-    println!(" => running cadre at: {}", server_addr);
+    let addr: SocketAddr = (Ipv6Addr::UNSPECIFIED, port).into();
+    info!(?addr, "running cadre");
 
-    axum::Server::bind(&server_addr)
+    axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await?;
 
