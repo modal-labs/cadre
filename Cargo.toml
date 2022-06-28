@@ -1,7 +1,7 @@
 [package]
 name = "cadre"
 version = "0.1.0"
-authors = ["Eric Zhang <ekzhang1@gmail.com>"]
+authors = ["Luis Capelo <luiscape@gmail.com>", "Eric Zhang <ekzhang1@gmail.com>"]
 license = "MIT"
 description = "Cadre is a simple, self-hosted, high-performance, and strongly consistent remote configuration service."
 repository = "https://github.com/modal-labs/cadre"
@@ -10,22 +10,19 @@ keywords = ["config", "web", "service", "remote"]
 categories = ["development-tools", "web-programming", "config", "database"]
 readme = "README.md"
 edition = "2021"
-publish = false
 
 [dependencies]
 anyhow = { version = "1.0.56", features = ["backtrace"] }
+async-recursion = "1.0.0"
+aws-config = "0.13.0"
+aws-sdk-s3 = "0.13.0"
+aws-sdk-secretsmanager = "0.13.0"
+aws-types = "0.13.0"
 axum = "0.5.9"
-home = "0.5.3"
 clap = { version = "3.2.6", features = ["derive", "env"] }
-tracing = "0.1.32"
+hyper = { version = "0.14.18", features = ["full"] }
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0.81"
 tempfile = "3.3.0"
-tokio = { version = "^1", features = ["full"] }
-aws-config = "0.13.0"
-aws-types = "0.13.0"
-aws-sdk-s3 = "0.13.0"
-aws-sdk-secretsmanager = "0.13.0"
-bytes = { version = "^1", features = ["serde"] }
-async-recursion = "1.0.0"
-hyper = { version = "0.14.18", features = ["full"] }
+tokio = { version = "1.19.2", features = ["full"] }
+tracing = "0.1.32"
