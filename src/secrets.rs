@@ -8,20 +8,29 @@ use serde_json::Value;
 /// Objects that manages the retrieval of secrets.
 #[derive(Clone, Debug)]
 pub struct Secrets {
-    client: Client,
+    client: Option<Client>,
 }
 
 impl Secrets {
-    /// Creates new instance of secrets manager.
-    pub async fn new(aws_config: &SdkConfig) -> Result<Self> {
+    /// Creates a new instance of secrets manager.
+    pub fn new(aws_config: &SdkConfig) -> Self {
         let client = Client::new(aws_config);
-        Ok(Self { client })
+        Self {
+            client: Some(client),
+        }
+    }
+
+    /// Creates a new instance with no backing secrets manager.
+    pub fn new_test() -> Self {
+        Self { client: None }
     }
 
     /// Fetches a secret from the AWS Secret Manager.
     pub async fn get(&self, name: &str) -> Result<Value> {
         let resp = self
             .client
+            .as_ref()
+            .context("AWS secrets client is missing")?
             .get_secret_value()
             .secret_id(name)
             .send()
