@@ -9,6 +9,7 @@ use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::Client;
 use aws_types::sdk_config::SdkConfig;
 use serde_json::Value;
+use tracing::info;
 
 use crate::template::Template;
 
@@ -40,9 +41,9 @@ impl Storage {
     }
 
     async fn fetch_object(&self, environment: &str) -> Result<Value> {
-        println!(" => read environment: '{}'", environment);
+        info!(%environment, "reading object");
 
-        let key = add_json_extension(environment);
+        let key = format!("{environment}.json");
         let resp = self
             .client
             .get_object()
@@ -102,7 +103,7 @@ impl Storage {
     /// Get and parse config from S3.
     #[async_recursion]
     pub async fn read_parsed_template(&self, environment: &str) -> Result<Value> {
-        println!(" => read environment: '{}'", environment);
+        info!(%environment, "reading template");
 
         // Get object from S3 and merge with defaults.
         let json = self.fetch_object(environment).await?;
@@ -120,8 +121,8 @@ impl Storage {
 
     /// Atomically persist a JSON configuration object into storage.
     pub async fn write(&self, environment: &String, value: &Value) -> Result<()> {
-        println!(" => writing environment: '{}'", environment);
-        let key = add_json_extension(environment);
+        info!(%environment, "writing configuration");
+        let key = format!("{environment}.json");
         let content = serde_json::to_vec(value)?.into();
 
         self.client
@@ -158,10 +159,6 @@ impl Storage {
         let value = Value::from(configs);
         Ok(serde_json::from_value(value)?)
     }
-}
-
-fn add_json_extension(environment: &str) -> String {
-    format!("{}.json", environment)
 }
 
 // Merges two serde_json::Value objects.
