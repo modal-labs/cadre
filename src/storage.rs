@@ -14,6 +14,12 @@ use serde_json::Value;
 
 use crate::template::Template;
 
+/// Creates an AWS SDK default config object.
+pub async fn default_aws_config() -> Result<SdkConfig> {
+    let region_provider = RegionProviderChain::default_provider();
+    Ok(aws_config::from_env().region(region_provider).load().await)
+}
+
 /// Object that manages storage persistence.
 #[derive(Clone, Debug)]
 pub struct Storage {
@@ -26,9 +32,7 @@ pub struct Storage {
 impl Storage {
     /// Create a new storage object.
     pub async fn new(bucket: String, default_template: Option<String>) -> Result<Self> {
-        let region_provider = RegionProviderChain::default_provider();
-        let config = aws_config::from_env().region(region_provider).load().await;
-
+        let config = default_aws_config().await?;
         Ok(Self {
             client: Client::new(&config),
             bucket,

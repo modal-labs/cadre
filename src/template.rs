@@ -28,9 +28,7 @@ impl Template {
     /// Parses JSON map based on template requirements.
     pub async fn parse(&mut self) -> Result<Value> {
         let mut parsed_value = self.value.clone();
-        if self.value.is_array() {
-            bail!("based config objects cannot be arrays")
-        } else {
+        if self.value.is_object() {
             let map = parsed_value.as_object_mut().unwrap();
             for (key, value) in map.iter_mut() {
                 evaluate(&self.secrets, key, value, &self.template_mark).await?;
@@ -38,6 +36,8 @@ impl Template {
 
             remove_template_marks(&self.template_mark, parsed_value.as_object_mut().unwrap()).await;
             Ok(parsed_value)
+        } else {
+            bail!("value must be an object")
         }
     }
 }
