@@ -29,3 +29,10 @@ are resolved at request-time.
   performance, secrets are cached by the server for up to a minute.
 
 All resolution of fields within templates is recursive.
+
+## Authors
+
+This library is created by the team behind [Modal](https://modal.com/) for their own use.
+
+- Luis Capelo ([@luiscape](https://twitter.com/luiscape)) – [Modal](https://modal.com/)
+- Eric Zhang ([@ekzhang1](https://twitter.com/ekzhang1)) – [Modal](https://modal.com/)
