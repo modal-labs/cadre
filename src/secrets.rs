@@ -1,9 +1,9 @@
 //! Interface for secret retrieval from the AWS Secret Manager service.;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use aws_sdk_secretsmanager::Client;
 use aws_types::sdk_config::SdkConfig;
-use serde_json::{from_str, Value};
+use serde_json::Value;
 
 /// Objects that manages the retrieval of secrets.
 #[derive(Clone, Debug)]
@@ -18,7 +18,7 @@ impl Secrets {
         Ok(Self { client })
     }
 
-    /// Fetches secret from the AWS Secret Manager.
+    /// Fetches a secret from the AWS Secret Manager.
     pub async fn get(&self, name: &str) -> Result<Value> {
         let resp = self
             .client
@@ -27,11 +27,7 @@ impl Secrets {
             .send()
             .await?;
 
-        // Non-existing secrets are replaced with empty strings. This may be confusing.
-        // Return error if this causes issues.
-        let secret = Value::from(resp.secret_string().unwrap_or(""));
-        let value = from_str(secret.as_str().unwrap())?;
-
-        Ok(value)
+        let secret = resp.secret_string().context("missing secret string")?;
+        Ok(serde_json::from_str(secret)?)
     }
 }
