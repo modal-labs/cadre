@@ -61,25 +61,26 @@ impl Storage {
     }
 
     /// Merges requested template with default if required.
-    async fn merge_with_defaults(
+    async fn merge_with_default_template(
         &self,
         templated_json: Template,
         environment: &str,
-        parse: bool,
     ) -> Result<Value> {
         let value = match self.default_template.clone() {
+            // The environment called is the same as the default template.
             _ if self.default_template == Option::from(environment.to_string()) => {
                 templated_json.value
             }
+
+            // Merge new template with the default template, overriding the default
+            // template keys.
             Some(v) => {
-                let mut d_template: Value;
-                if parse {
-                    d_template = self.read_parsed_template(&v).await?;
-                    merge_values(&mut d_template, &templated_json.value);
-                } else {
-                    d_template = self.read_template(&v).await?;
-                    merge_values(&mut d_template, &templated_json.value);
-                }
+                let mut d_template = self.read_template(&v).await?;
+                merge_values(
+                    &mut d_template,
+                    &templated_json.value,
+                    &templated_json.template_mark,
+                );
                 d_template
             }
             None => templated_json.value,
@@ -94,7 +95,7 @@ impl Storage {
         let json = self.fetch_object(environment).await?;
         let templated_json = Template::new(&self.aws_config, json).await?;
         let value = self
-            .merge_with_defaults(templated_json, environment, false)
+            .merge_with_default_template(templated_json, environment)
             .await?;
 
         Ok(value)
@@ -109,7 +110,7 @@ impl Storage {
         let json = self.fetch_object(environment).await?;
         let templated_json = Template::new(&self.aws_config, json).await?;
         let merged_value = self
-            .merge_with_defaults(templated_json, environment, true)
+            .merge_with_default_template(templated_json, environment)
             .await?;
 
         // Parse the resulting templatet into values.
@@ -168,11 +169,19 @@ fn add_json_extension(environment: &str) -> String {
 
 // Merges two serde_json::Value objects.
 // Reference: https://github.com/serde-rs/json/issues/377#issuecomment-341490464
-fn merge_values(a: &mut Value, b: &Value) {
+fn merge_values(a: &mut Value, b: &Value, template_mark: &str) {
     match (a, b) {
         (&mut Value::Object(ref mut a), &Value::Object(ref b)) => {
             for (k, v) in b {
-                merge_values(a.entry(k.clone()).or_insert(Value::Null), v);
+                // Remove template mark, otherwise we won't be able to merge correctly and
+                // both keys--templated and not-templated--will exist in the resulting
+                // json.
+                let mut k_mut = k.clone();
+                if k_mut.starts_with(template_mark) {
+                    k_mut = k_mut.replace(template_mark, "");
+                };
+                a.remove(&k_mut);
+                merge_values(a.entry(k.clone()).or_insert(Value::Null), v, template_mark);
             }
         }
         (a, b) => {

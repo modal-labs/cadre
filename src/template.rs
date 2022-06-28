@@ -12,7 +12,7 @@ use crate::secrets::Secrets;
 pub struct Template {
     pub value: Value,
     secrets: Secrets,
-    template_mark: String,
+    pub template_mark: String,
 }
 
 impl Template {
