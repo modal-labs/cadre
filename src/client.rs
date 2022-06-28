@@ -17,18 +17,18 @@ pub const DEFAULT_ORIGIN: &str = "http://configs.modal.internal";
 
 impl CadreClient {
     /// Create a new file client object pointing at a given HTTP origin.
+    #[allow(clippy::unnecessary_unwrap)]
     pub fn new(origin: Option<&str>) -> Self {
         let mut connector = HttpConnector::new();
         connector.set_nodelay(true);
 
         // use env var for overriding default origin
-        let origin_value;
-        if origin.is_none() {
+        let origin_value: String = if origin.is_none() {
             let cadre_url = option_env!("CADRE_URL");
-            origin_value = cadre_url.unwrap_or(DEFAULT_ORIGIN).to_string();
+            cadre_url.unwrap_or(DEFAULT_ORIGIN).to_string()
         } else {
-            origin_value = origin.unwrap().into();
-        }
+            origin.unwrap().into()
+        };
 
         Self {
             client: Client::builder().build(connector),
