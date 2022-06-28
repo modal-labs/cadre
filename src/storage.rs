@@ -6,10 +6,8 @@ use std::str::from_utf8;
 use anyhow::Result;
 use async_recursion::async_recursion;
 use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_s3::types::ByteStream;
 use aws_sdk_s3::Client;
 use aws_types::sdk_config::SdkConfig;
-use bytes::Bytes;
 use serde_json::Value;
 
 use crate::template::Template;
@@ -124,8 +122,7 @@ impl Storage {
     pub async fn write(&self, environment: &String, value: &Value) -> Result<()> {
         println!(" => writing environment: '{}'", environment);
         let key = add_json_extension(environment);
-        let bytes = Bytes::copy_from_slice(&serde_json::to_vec(value)?);
-        let content = ByteStream::from(bytes);
+        let content = serde_json::to_vec(value)?.into();
 
         self.client
             .put_object()
