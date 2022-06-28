@@ -1,57 +1,43 @@
 //! Implementation of the cadre command-line interface.
 
+use std::net::{Ipv6Addr, SocketAddr};
+
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 use crate::server::server;
 
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
-#[clap(propagate_version = true)]
-pub struct Cli {
-    /// Commands supported by the CLI.
-    #[clap(subcommand)]
-    pub command: Commands,
+pub struct Args {
+    /// Port to serve cadre on.
+    #[clap(short, long, default_value_t = 3000)]
+    port: u16,
+
+    /// Bucket to use for storing cadre templated JSON files.
+    #[clap(short, long)]
+    bucket: String,
+
+    /// Sets a default templated JSON to be used for other environments
+    /// to build upon. Ignored if left empty.
+    #[clap(short, long)]
+    default_template: Option<String>,
 }
 
-#[derive(Subcommand, Debug)]
-pub enum Commands {
-    /// Start the cadre service
-    Server {
-        /// Port to serve cadre on.
-        #[clap(short, long, value_parser, default_value = "3000")]
-        port: String,
-
-        /// Bucket to use for storing cadre templated JSON files.
-        #[clap(short, long, value_parser)]
-        bucket: String,
-
-        /// Sets a default templated JSON to be used for other environments
-        /// to build upon. Ignored if left empty.
-        #[clap(short, long, value_parser)]
-        default_template: Option<String>,
-    },
-}
-
-impl Cli {
+impl Args {
     /// Run the action corresponding to this CLI command.
     pub async fn run(self) -> Result<()> {
-        match self.command {
-            Commands::Server {
-                port,
-                bucket,
-                default_template,
-            } => run_server(port, bucket, default_template).await?,
-        }
-        Ok(())
+        run_server(self.port, self.bucket, self.default_template).await
     }
 }
 
-async fn run_server(port: String, bucket: String, default_template: Option<String>) -> Result<()> {
-    let server_addr = format!("0.0.0.0:{}", port);
-    println!(" => running cadre at: {}", server_addr);
+async fn run_server(port: u16, bucket: String, default_template: Option<String>) -> Result<()> {
     let app = server(bucket, default_template).await?;
-    axum::Server::bind(&server_addr.parse()?)
+
+    let server_addr: SocketAddr = (Ipv6Addr::UNSPECIFIED, port).into();
+    println!(" => running cadre at: {}", server_addr);
+
+    axum::Server::bind(&server_addr)
         .serve(app.into_make_service())
         .await?;
 
