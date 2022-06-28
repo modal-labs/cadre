@@ -1,5 +1,4 @@
-//! Cadre is a simple, self-hosted, high-performance, and strongly consistent
-//! remote configuration service.
+//! Web server handler implementation using axum.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

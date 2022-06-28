@@ -9,7 +9,7 @@ use cached::{Cached, TimedCache};
 use parking_lot::Mutex;
 use serde_json::Value;
 
-/// Objects that manages the retrieval of secrets.
+/// Object that manages the retrieval of secrets.
 #[derive(Clone, Debug)]
 pub struct Secrets {
     client: Option<Client>,
@@ -27,6 +27,7 @@ impl Secrets {
     }
 
     /// Creates a new instance with no backing secrets manager.
+    #[cfg(test)]
     pub fn new_test() -> Self {
         Self {
             client: None,

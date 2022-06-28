@@ -1,4 +1,4 @@
-//! Implementation of the cadre command-line interface.
+//! Command-line interface (used by the binary).
 
 use std::net::{Ipv6Addr, SocketAddr};
 
@@ -8,8 +8,7 @@ use tracing::info;
 
 use crate::server::server;
 
-/// A simple, self-hosted, high-performance, and strongly consistent remote
-/// configuration service.
+/// A simple, self-hosted, high-performance remote configuration service.
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct Args {

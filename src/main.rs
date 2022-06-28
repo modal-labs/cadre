@@ -1,6 +1,6 @@
 use std::process;
 
-use cadre::cli::Args;
+use cadre::Args;
 use clap::Parser;
 use tracing::error;
 
