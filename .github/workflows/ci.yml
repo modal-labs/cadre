@@ -27,10 +27,10 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: nightly
           components: rustfmt
 
-      - run: cargo fmt -- --check
+      - run: cargo +nightly fmt -- --check
 
   clippy:
     name: Clippy
