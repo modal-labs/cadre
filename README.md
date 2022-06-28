@@ -2,7 +2,7 @@
 
 <p align="center">
 <a href="https://crates.io/crates/cadre">
-<kbd><img src="https://i.imgur.com/WTmiCrM.png" width="640"></kbd><br>
+<kbd><img src="https://i.imgur.com/hIRb9PK.png" width="640"></kbd><br>
 <strong>cadre</strong>
 </a>
 </p>
@@ -28,4 +28,4 @@ are resolved at request-time.
   [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/). For
   performance, secrets are cached by the server for up to a minute.
 
-All fields resolution in templates is recursive.
+All resolution of fields within templates is recursive.
