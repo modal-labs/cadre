@@ -30,12 +30,12 @@ pub struct Storage {
 
 impl Storage {
     /// Create a new storage object.
-    pub async fn new(bucket: String, default_template: Option<String>) -> Result<Self> {
+    pub async fn new(bucket: &str, default_template: Option<&str>) -> Result<Self> {
         let config = default_aws_config().await?;
         Ok(Self {
             client: Client::new(&config),
-            bucket,
-            default_template,
+            bucket: bucket.into(),
+            default_template: default_template.map(String::from),
             aws_config: config,
         })
     }

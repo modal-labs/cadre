@@ -28,11 +28,11 @@ pub struct Args {
 impl Args {
     /// Run the action corresponding to this CLI command.
     pub async fn run(self) -> Result<()> {
-        run_server(self.port, self.bucket, self.default_template).await
+        run_server(self.port, &self.bucket, self.default_template.as_deref()).await
     }
 }
 
-async fn run_server(port: u16, bucket: String, default_template: Option<String>) -> Result<()> {
+async fn run_server(port: u16, bucket: &str, default_template: Option<&str>) -> Result<()> {
     let app = server(bucket, default_template).await?;
 
     let addr: SocketAddr = (Ipv6Addr::UNSPECIFIED, port).into();
