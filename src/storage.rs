@@ -1,9 +1,10 @@
 //! Persistent, durable storage for cadre configuration.
 //!
 //! This stores JSON templates in a S3 bucket.
-use std::str::from_utf8;
 
-use anyhow::Result;
+use std::str;
+
+use anyhow::{Context, Result};
 use async_recursion::async_recursion;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::Client;
@@ -47,16 +48,14 @@ impl Storage {
         let resp = self
             .client
             .get_object()
-            .bucket(self.bucket.clone())
+            .bucket(&self.bucket)
             .key(key)
             .send()
             .await?;
 
-        let data = resp.body.collect().await;
-        let bytes = data.unwrap().into_bytes();
-        let json = serde_json::from_str(from_utf8(&bytes)?)?;
-
-        Ok(json)
+        let data = resp.body.collect().await?;
+        let bytes = data.into_bytes();
+        Ok(serde_json::from_str(str::from_utf8(&bytes)?)?)
     }
 
     /// Merges requested template with default if required.
@@ -81,7 +80,7 @@ impl Storage {
         })
     }
 
-    /// Get config template from S3.
+    /// Read a configuration template from S3.
     #[async_recursion]
     pub async fn read_template(&self, environment: &str) -> Result<Value> {
         let json = self.fetch_object(environment).await?;
@@ -93,34 +92,25 @@ impl Storage {
         Ok(value)
     }
 
-    /// Get and parse config from S3.
+    /// Read a configuration from S3 with populated template values.
     #[async_recursion]
-    pub async fn read_parsed_template(&self, environment: &str) -> Result<Value> {
-        info!(%environment, "reading template");
-
-        // Get object from S3 and merge with defaults.
-        let json = self.fetch_object(environment).await?;
-        let templated_json = Template::new(&self.aws_config, json).await?;
-        let merged_value = self
-            .merge_with_default_template(templated_json, environment)
-            .await?;
+    pub async fn read_config(&self, environment: &str) -> Result<Value> {
+        let merged_value = self.read_template(environment).await?;
 
         // Parse the resulting templatet into values.
         let merged_template = Template::new(&self.aws_config, merged_value).await?;
-        let parsed_value = merged_template.parse().await?;
-
-        Ok(parsed_value)
+        Ok(merged_template.parse().await?)
     }
 
     /// Atomically persist a JSON configuration object into storage.
-    pub async fn write(&self, environment: &String, value: &Value) -> Result<()> {
+    pub async fn write(&self, environment: &str, value: &Value) -> Result<()> {
         info!(%environment, "writing configuration");
         let key = format!("{environment}.json");
         let content = serde_json::to_vec(value)?.into();
 
         self.client
             .put_object()
-            .bucket(self.bucket.clone())
+            .bucket(&self.bucket)
             .key(key)
             .body(content)
             .send()
@@ -137,20 +127,16 @@ impl Storage {
             .bucket(&self.bucket)
             .send()
             .await?;
-        let mut configs = Vec::new();
 
+        let mut configs = Vec::new();
         for obj in objects.contents().unwrap_or_default() {
-            // only return json files to users; remove extension for easy subsequent
-            // operations
-            let object_name = obj.key().unwrap();
-            if object_name.ends_with("json") {
-                configs.push(object_name.replace(".json", ""))
-            } else {
+            // Only return json files to users.
+            let object_name = obj.key().context("S3 object is missing key")?;
+            if let Some(stripped) = object_name.strip_suffix(".json") {
+                configs.push(stripped)
             }
         }
-
-        let value = Value::from(configs);
-        Ok(serde_json::from_value(value)?)
+        Ok(configs.into())
     }
 }
 

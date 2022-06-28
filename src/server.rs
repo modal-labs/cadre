@@ -51,7 +51,7 @@ async fn get_config_handler(
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<Value>, StatusCode> {
     if let Some(environment) = params.get("environment") {
-        match storage.read_parsed_template(environment).await {
+        match storage.read_config(environment).await {
             Ok(value) => Ok(Json(value)),
             Err(err) => {
                 warn!(%environment, ?err, "problem reading config");
