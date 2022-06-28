@@ -16,8 +16,8 @@ use tracing::{error, warn};
 use crate::storage::Storage;
 
 /// Web server for handling requests.
-pub async fn server(bucket: String, default_template: Option<String>) -> Result<Router> {
-    let storage = Storage::new(bucket.parse()?, default_template).await?;
+pub async fn server(bucket: &str, default_template: Option<&str>) -> Result<Router> {
+    let storage = Storage::new(bucket, default_template).await?;
 
     Ok(Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))
