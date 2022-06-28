@@ -11,7 +11,7 @@ use aws_types::sdk_config::SdkConfig;
 use serde_json::Value;
 use tracing::info;
 
-use crate::template::Template;
+use crate::template::{Template, TEMPLATE_MARK};
 
 /// Creates an AWS SDK default config object.
 pub async fn default_aws_config() -> Result<SdkConfig> {
@@ -65,27 +65,20 @@ impl Storage {
         templated_json: Template,
         environment: &str,
     ) -> Result<Value> {
-        let value = match self.default_template.clone() {
+        Ok(match self.default_template.as_deref() {
             // The environment called is the same as the default template.
-            _ if self.default_template == Option::from(environment.to_string()) => {
-                templated_json.value
-            }
+            Some(env) if env == environment => templated_json.into_value(),
 
             // Merge new template with the default template, overriding the default
             // template keys.
-            Some(v) => {
-                let mut d_template = self.read_template(&v).await?;
-                merge_values(
-                    &mut d_template,
-                    &templated_json.value,
-                    &templated_json.template_mark,
-                );
+            Some(env) => {
+                let mut d_template = self.read_template(env).await?;
+                merge_values(&mut d_template, &templated_json.into_value());
                 d_template
             }
-            None => templated_json.value,
-        };
 
-        Ok(value)
+            None => templated_json.into_value(),
+        })
     }
 
     /// Get config template from S3.
@@ -113,7 +106,7 @@ impl Storage {
             .await?;
 
         // Parse the resulting templatet into values.
-        let mut merged_template = Template::new(&self.aws_config, merged_value).await?;
+        let merged_template = Template::new(&self.aws_config, merged_value).await?;
         let parsed_value = merged_template.parse().await?;
 
         Ok(parsed_value)
@@ -161,21 +154,19 @@ impl Storage {
     }
 }
 
-// Merges two serde_json::Value objects.
-// Reference: https://github.com/serde-rs/json/issues/377#issuecomment-341490464
-fn merge_values(a: &mut Value, b: &Value, template_mark: &str) {
+/// Merge two [`serde_json::Value`] objects.
+///
+/// Reference: https://github.com/serde-rs/json/issues/377#issuecomment-341490464
+fn merge_values(a: &mut Value, b: &Value) {
     match (a, b) {
         (&mut Value::Object(ref mut a), &Value::Object(ref b)) => {
             for (k, v) in b {
                 // Remove template mark, otherwise we won't be able to merge correctly and
                 // both keys--templated and not-templated--will exist in the resulting
                 // json.
-                let mut k_mut = k.clone();
-                if k_mut.starts_with(template_mark) {
-                    k_mut = k_mut.replace(template_mark, "");
-                };
-                a.remove(&k_mut);
-                merge_values(a.entry(k.clone()).or_insert(Value::Null), v, template_mark);
+                let k_no_mark = k.strip_prefix(TEMPLATE_MARK).unwrap_or(k);
+                a.remove(k_no_mark);
+                merge_values(a.entry(k.clone()).or_insert(Value::Null), v);
             }
         }
         (a, b) => {

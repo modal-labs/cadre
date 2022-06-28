@@ -15,7 +15,6 @@ impl Secrets {
     /// Creates new instance of secrets manager.
     pub async fn new(aws_config: &SdkConfig) -> Result<Self> {
         let client = Client::new(aws_config);
-
         Ok(Self { client })
     }
 

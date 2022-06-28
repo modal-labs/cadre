@@ -59,13 +59,13 @@ impl CadreClient {
         Ok(json.to_string())
     }
 
-    /// Rendered config object from cadre.
+    /// Retrieve a populated config object.
     pub async fn get_config(&self, environment: &str) -> Result<String> {
         self.get(&format!("{}/c/{}", self.origin, environment))
             .await
     }
 
-    /// Fetch original templated JSON object.
+    /// Fetch the raw, templated JSON.
     pub async fn get_template(&self, environment: &str) -> Result<String> {
         self.get(&format!("{}/t/{}", self.origin, environment))
             .await

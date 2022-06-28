@@ -8,6 +8,8 @@ use tracing::info;
 
 use crate::server::server;
 
+/// A simple, self-hosted, high-performance, and strongly consistent remote
+/// configuration service.
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct Args {
@@ -15,7 +17,7 @@ pub struct Args {
     #[clap(short, long, default_value_t = 3000)]
     port: u16,
 
-    /// Bucket to use for storing cadre templated JSON files.
+    /// S3 bucket to use for storing cadre templated JSON files.
     #[clap(short, long)]
     bucket: String,
 
