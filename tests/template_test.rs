@@ -1,27 +1,23 @@
 use anyhow::Result;
-use cadre::storage::default_aws_config;
-use cadre::template::Template;
-use serde_json::{json, Value};
+use cadre::{secrets::Secrets, template::populate_template};
+use serde_json::json;
 
 #[tokio::test]
-async fn parse_test() -> Result<()> {
-    let config = default_aws_config().await?;
-    let json = json!({"name": "test"});
-    let observed = json.clone();
-    let expected = json.clone();
-    let template = Template::new(&config, observed).await?;
+async fn populate_basic() -> Result<()> {
+    let secrets = Secrets::new_test();
+    let mut template = json!({"name": "test"});
+    let expected = template.clone();
 
-    assert_eq!(template.parse().await?, expected);
+    populate_template(&mut template, &secrets).await?;
+    assert_eq!(template, expected);
     Ok(())
 }
 
 #[tokio::test]
-async fn parse_test_fail() -> Result<()> {
-    let config = default_aws_config().await?;
-    let observed = Value::from("[]");
-    let template = Template::new(&config, observed).await?;
-
-    let value = template.parse().await;
-    assert!(value.is_err());
+async fn populate_fail() -> Result<()> {
+    let secrets = Secrets::new_test();
+    let mut template = json!({"*mykey": "NotAValidTemplateLiteral!#@"});
+    let result = populate_template(&mut template, &secrets).await;
+    assert!(result.is_err());
     Ok(())
 }
