@@ -1,4 +1,4 @@
-//! Client for cadre.
+//! Implementation of the Rust client for cadre.
 
 use anyhow::{ensure, Result};
 use hyper::body::Buf;
@@ -6,7 +6,7 @@ use hyper::client::HttpConnector;
 use hyper::{Body, Client, Request};
 use serde_json::Value;
 
-/// An asynchronous client for the file server.
+/// An asynchronous client for the configuration store.
 #[derive(Clone)]
 pub struct CadreClient {
     client: Client<HttpConnector>,
@@ -14,7 +14,7 @@ pub struct CadreClient {
 }
 
 impl CadreClient {
-    /// Create a new file client object pointing at a given HTTP origin.
+    /// Create a new client object pointing at a given HTTP origin.
     #[allow(clippy::unnecessary_unwrap)]
     pub fn new(origin: Option<&str>) -> Self {
         let mut connector = HttpConnector::new();
@@ -65,7 +65,7 @@ impl CadreClient {
             .await
     }
 
-    /// Fetch the raw, templated JSON.
+    /// Fetch the raw JSON value for a template.
     pub async fn get_template(&self, environment: &str) -> Result<String> {
         self.get(&format!("{}/t/{}", self.origin, environment))
             .await
