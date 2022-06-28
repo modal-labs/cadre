@@ -18,12 +18,10 @@ async fn parse_test() -> Result<()> {
 #[tokio::test]
 async fn parse_test_fail() -> Result<()> {
     let config = default_aws_config().await?;
-    let observed = Value::from("{}");
+    let observed = Value::from("[]");
     let mut template = Template::new(&config, observed).await?;
 
-    match template.parse().await {
-        Ok(_) => assert!(true, "must fail to parse template"),
-        Err(_) => assert!(true),
-    }
+    let value = template.parse().await;
+    assert!(value.is_err());
     Ok(())
 }
