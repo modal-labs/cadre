@@ -1,17 +1,16 @@
-//! Templating engine for cadre templates.
+//! Engine for populating cadre configuration templates.
 
-use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use serde_json::Value;
 
-use crate::secrets::Secrets;
+use super::resolver::ResolverChain;
 
 /// Marker character used for template strings.
 pub const TEMPLATE_MARK: &str = "*";
 
 /// Populate a JSON value with the results of templated strings.
-pub async fn populate_template(value: &mut Value, secrets: &Secrets) -> Result<()> {
+pub async fn populate_template(value: &mut Value, chain: &ResolverChain) -> Result<()> {
     let mut stack = vec![value];
     while let Some(value) = stack.pop() {
         if let Some(map) = value.as_object_mut() {
@@ -20,10 +19,7 @@ pub async fn populate_template(value: &mut Value, secrets: &Secrets) -> Result<(
                     let value = value
                         .as_str()
                         .with_context(|| format!("templated key {key:?} is of non-string type"))?;
-                    map.insert(
-                        key_raw.into(),
-                        resolve_templated_value(value, secrets).await?,
-                    );
+                    map.insert(key_raw.into(), chain.resolve(value).await?);
                 } else {
                     map.insert(key, value);
                 }
@@ -32,15 +28,6 @@ pub async fn populate_template(value: &mut Value, secrets: &Secrets) -> Result<(
         }
     }
     Ok(())
-}
-
-/// Resolve a single value that uses the template language.
-async fn resolve_templated_value(value: &str, secrets: &Secrets) -> Result<Value> {
-    if let Some(name) = value.strip_prefix("aws:") {
-        secrets.get(name).await
-    } else {
-        bail!("unresolved template syntax: {value:?}");
-    }
 }
 
 /// Merge two raw template objects, remaining aware of unpopulated values.
@@ -70,7 +57,8 @@ pub fn merge_templates(dest: &mut Value, src: &Value) {
 mod tests {
     use serde_json::json;
 
-    use super::merge_templates;
+    use super::{merge_templates, populate_template};
+    use crate::server::resolver::{EchoName, ResolverChain};
 
     #[test]
     fn merge_templates_basic() {
@@ -137,5 +125,27 @@ mod tests {
         let mut dest = json!({"a": {"b": {"c": {"k": "l"}}}});
         merge_templates(&mut dest, &src);
         assert_eq!(dest, json!({"a": {"b": {"c": {"d": "e", "k": "l"}}}}));
+    }
+
+    #[tokio::test]
+    async fn populate_with_resolver() {
+        let mut value = json!({"a": {"value": "3", "*rep": "echo:hello"}});
+
+        let mut chain = ResolverChain::new();
+        chain.add(EchoName);
+
+        populate_template(&mut value, &chain).await.unwrap();
+        assert_eq!(value, json!({"a": {"value": "3", "rep": "hello"}}));
+    }
+
+    #[tokio::test]
+    async fn fail_populate() {
+        let chain = ResolverChain::new();
+
+        let mut value = json!({"*missing": "foo:bar"});
+        assert!(populate_template(&mut value, &chain).await.is_err());
+
+        let mut value = json!({"*invalid": "$@not@avalidliteral"});
+        assert!(populate_template(&mut value, &chain).await.is_err());
     }
 }

@@ -1,8 +1,7 @@
-//! Persistent, durable storage for cadre configuration.
-//!
-//! This stores JSON templates in a S3 bucket.
+//! Server state object managing all operations on cadre configuration.
 
 use std::str;
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use aws_config::meta::region::RegionProviderChain;
@@ -11,8 +10,8 @@ use aws_types::sdk_config::SdkConfig;
 use serde_json::Value;
 use tracing::info;
 
-use crate::secrets::Secrets;
-use crate::template::{merge_templates, populate_template};
+use super::resolver::{AwsSecrets, ResolverChain};
+use super::template::{merge_templates, populate_template};
 
 /// Creates an AWS SDK default config object.
 pub async fn default_aws_config() -> Result<SdkConfig> {
@@ -20,22 +19,25 @@ pub async fn default_aws_config() -> Result<SdkConfig> {
     Ok(aws_config::from_env().region(region_provider).load().await)
 }
 
-/// Object that manages storage persistence.
-#[derive(Clone, Debug)]
-pub struct Storage {
+/// Object that manages server state, including storage and templating.
+#[derive(Clone)]
+pub struct State {
     s3: Client,
-    secrets: Secrets,
+    chain: Arc<ResolverChain>,
     bucket: String,
     default_template: Option<String>,
 }
 
-impl Storage {
-    /// Create a new storage object.
+impl State {
+    /// Create a new default state object.
     pub async fn new(bucket: &str, default_template: Option<&str>) -> Result<Self> {
         let config = default_aws_config().await?;
+        let mut chain = ResolverChain::new();
+        chain.add(AwsSecrets::new(&config));
+
         Ok(Self {
             s3: Client::new(&config),
-            secrets: Secrets::new(&config),
+            chain: Arc::new(chain),
             bucket: bucket.into(),
             default_template: default_template.map(String::from),
         })
@@ -87,7 +89,7 @@ impl Storage {
                 merge_templates(&mut template, &default_template)
             }
         }
-        populate_template(&mut template, &self.secrets).await?;
+        populate_template(&mut template, &self.chain).await?;
         Ok(template)
     }
 
