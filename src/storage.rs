@@ -41,8 +41,9 @@ impl Storage {
         })
     }
 
-    async fn fetch_object(&self, env: &str) -> Result<Value> {
-        info!(%env, "reading object");
+    /// Read a configuration template from S3.
+    pub async fn read_template(&self, env: &str) -> Result<Value> {
+        info!(%env, "reading config template");
 
         let key = format!("{env}.json");
         let resp = self
@@ -58,28 +59,9 @@ impl Storage {
         Ok(serde_json::from_str(str::from_utf8(&bytes)?)?)
     }
 
-    /// Read a configuration template from S3.
-    pub async fn read_template(&self, env: &str) -> Result<Value> {
-        let template = self.fetch_object(env).await?;
-        if let Some(default_env) = &self.default_template {
-            if env != default_env {
-                let mut default_template = self.fetch_object(default_env).await?;
-                merge_templates(&mut default_template, &template)
-            }
-        }
-        Ok(template)
-    }
-
-    /// Read a configuration from S3 with populated template values.
-    pub async fn read_config(&self, env: &str) -> Result<Value> {
-        let mut template = self.read_template(env).await?;
-        populate_template(&mut template, &self.secrets).await?;
-        Ok(template)
-    }
-
-    /// Atomically persist a JSON configuration object into storage.
-    pub async fn write(&self, env: &str, template: &Value) -> Result<()> {
-        info!(%env, "writing configuration");
+    /// Atomically persist a configuration template to S3.
+    pub async fn write_template(&self, env: &str, template: &Value) -> Result<()> {
+        info!(%env, "writing config template");
         let key = format!("{env}.json");
         let content = serde_json::to_vec(template)?.into();
 
@@ -94,7 +76,23 @@ impl Storage {
         Ok(())
     }
 
-    /// Returns list of available config files from S3.
+    /// Read a configuration template from S3 and populate templated values.
+    ///
+    /// This configuration will first be merged with the default template as
+    /// well, if it is provided.
+    pub async fn load_config(&self, env: &str) -> Result<Value> {
+        let mut template = self.read_template(env).await?;
+        if let Some(default_env) = &self.default_template {
+            if env != default_env {
+                let default_template = self.read_template(default_env).await?;
+                merge_templates(&mut template, &default_template)
+            }
+        }
+        populate_template(&mut template, &self.secrets).await?;
+        Ok(template)
+    }
+
+    /// Return a list of available configuration templates from S3.
     pub async fn list_available_configs(&self) -> Result<Value> {
         let objects = self
             .s3

@@ -43,7 +43,7 @@ async fn get_config_handler(
     Extension(storage): Extension<Storage>,
     Path(env): Path<String>,
 ) -> Result<Json<Value>, StatusCode> {
-    match storage.read_config(&env).await {
+    match storage.load_config(&env).await {
         Ok(value) => Ok(Json(value)),
         Err(err) => {
             warn!(%env, ?err, "problem reading config");
@@ -69,7 +69,7 @@ async fn put_handler(
     Path(env): Path<String>,
     body: Json<Value>,
 ) -> Result<(), StatusCode> {
-    match storage.write(&env, &body).await {
+    match storage.write_template(&env, &body).await {
         Ok(_) => Ok(()),
         Err(err) => {
             error!(?err, "could not put config");
