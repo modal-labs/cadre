@@ -52,7 +52,7 @@ impl Storage {
         match self {
             Storage::S3(s3, bucket) => {
                 let key = format!("{env}.json");
-                let content = serde_json::to_vec(value)?.into();
+                let content = serde_json::to_vec_pretty(value)?.into();
                 s3.put_object()
                     .bucket(bucket)
                     .key(key)
@@ -62,7 +62,7 @@ impl Storage {
             }
             Storage::LocalFS(path) => {
                 let path = path.join(format!("{env}.json"));
-                let content = serde_json::to_vec(value)?;
+                let content = serde_json::to_vec_pretty(value)?;
                 fs::write(&path, &content).await?;
             }
             Storage::Memory(map) => {
