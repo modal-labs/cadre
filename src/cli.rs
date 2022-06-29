@@ -13,7 +13,7 @@ use crate::server::server;
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// Port to serve cadre on.
-    #[clap(short, long, default_value_t = 3000)]
+    #[clap(short, long, default_value_t = 7608)]
     port: u16,
 
     /// S3 bucket to use for storing cadre templated JSON files.
