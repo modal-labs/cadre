@@ -14,6 +14,7 @@ use self::state::State;
 
 pub mod resolver;
 pub mod state;
+pub mod storage;
 pub mod template;
 
 /// Web server for handling requests.
