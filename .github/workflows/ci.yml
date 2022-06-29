@@ -1,10 +1,16 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   rust:
-    name: Build and Test
+    name: Lint and Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -13,10 +19,15 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v1
 
       - run: cargo build --all-features
 
       - run: cargo test
+
+      - run: cargo clippy -- -D warnings
 
   rustfmt:
     name: Rustfmt
@@ -31,17 +42,3 @@ jobs:
           components: rustfmt
 
       - run: cargo +nightly fmt -- --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: clippy
-
-      - run: cargo clippy -- -D warnings
