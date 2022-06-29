@@ -26,7 +26,7 @@ impl CadreClient {
         }
     }
 
-    async fn get(&self, uri: &str) -> Result<String> {
+    async fn get(&self, uri: &str) -> Result<Value> {
         let req = Request::builder()
             .method("GET")
             .uri(uri)
@@ -41,20 +41,16 @@ impl CadreClient {
 
         // asynchronously aggregate the chunks of the body and create serde json
         let body = hyper::body::aggregate(resp).await?;
-        let json: Value = serde_json::from_reader(body.reader())?;
-
-        Ok(json.to_string())
+        Ok(serde_json::from_reader(body.reader())?)
     }
 
-    /// Retrieve a populated config object.
-    pub async fn get_config(&self, environment: &str) -> Result<String> {
-        self.get(&format!("{}/c/{}", self.origin, environment))
-            .await
+    /// Fetch the raw JSON source for a template.
+    pub async fn read_template(&self, env: &str) -> Result<Value> {
+        self.get(&format!("{}/t/{}", self.origin, env)).await
     }
 
-    /// Fetch the raw JSON value for a template.
-    pub async fn get_template(&self, environment: &str) -> Result<String> {
-        self.get(&format!("{}/t/{}", self.origin, environment))
-            .await
+    /// Read a populated configuration with templated and default values.
+    pub async fn load_config(&self, env: &str) -> Result<Value> {
+        self.get(&format!("{}/c/{}", self.origin, env)).await
     }
 }
