@@ -16,26 +16,13 @@ pub struct CadreClient {
 impl CadreClient {
     /// Create a new client object pointing at a given HTTP origin.
     #[allow(clippy::unnecessary_unwrap)]
-    pub fn new(origin: Option<&str>) -> Self {
+    pub fn new(origin: &str) -> Self {
         let mut connector = HttpConnector::new();
         connector.set_nodelay(true);
 
-        // use env var for overriding default origin
-        let origin_value: String = if origin.is_none() {
-            let cadre_url = match option_env!("CADRE_URL") {
-                Some(v) => v,
-                None => panic!(
-                    "No available cadre URL. Either pass 'origin' or use env var 'CADRE_URL'."
-                ),
-            };
-            cadre_url.to_string()
-        } else {
-            origin.unwrap().into()
-        };
-
         Self {
             client: Client::builder().build(connector),
-            origin: origin_value,
+            origin: origin.into(),
         }
     }
 
