@@ -49,7 +49,7 @@ pub fn merge_templates(dest: &mut Value, src: &Value) {
         (&mut Value::Object(ref mut dest), &Value::Object(ref src)) => {
             for (key, value) in src {
                 // Remove template mark, otherwise we won't be able to merge correctly and
-                // both keys—templated and not-templated—will exist in the resulting JSON.
+                // both keys--templated and not--templated—will exist in the resulting JSON.
                 if let Some(key_raw) = key.strip_prefix(TEMPLATE_MARK) {
                     dest.remove(key_raw);
                 }
