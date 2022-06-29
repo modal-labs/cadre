@@ -28,11 +28,23 @@ are resolved at request-time.
   [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/). For
   performance, secrets are cached by the server for up to a minute.
 
-All resolution of fields within templates is recursive.
+All resolution of fields within templates is recursive. Additionally, you can
+optionally specify a _default template_, which is merged with the selected
+template whenever a configuration is requested.
+
+## Deployment
+
+Run the `cargo install cadre` and use the `cadre` command. We also offer a
+Docker image at `ghcr.io/modal-labs/cadre`, which is automatically built from
+the Dockerfile in this repository on each release.
+
+To perform a new release, check that you have write access to this GitHub
+repository and the `cadre` crate on crates.io, then just run a single command:
+[`cargo release`](https://github.com/crate-ci/cargo-release).
 
 ## Authors
 
-This library is created by the team behind [Modal](https://modal.com/) for their own use.
+This library is created by the team behind [Modal](https://modal.com/).
 
 - Luis Capelo ([@luiscape](https://twitter.com/luiscape)) – [Modal](https://modal.com/)
 - Eric Zhang ([@ekzhang1](https://twitter.com/ekzhang1)) – [Modal](https://modal.com/)
