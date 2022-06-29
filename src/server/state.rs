@@ -3,78 +3,57 @@
 use std::str;
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::Client;
 use aws_types::sdk_config::SdkConfig;
 use serde_json::Value;
-use tracing::info;
 
 use super::resolver::{AwsSecrets, ResolverChain};
+use super::storage::Storage;
 use super::template::{merge_templates, populate_template};
 
 /// Creates an AWS SDK default config object.
-pub async fn default_aws_config() -> Result<SdkConfig> {
+pub async fn default_aws_config() -> SdkConfig {
     let region_provider = RegionProviderChain::default_provider();
-    Ok(aws_config::from_env().region(region_provider).load().await)
+    aws_config::from_env().region(region_provider).load().await
 }
 
 /// Object that manages server state, including storage and templating.
 #[derive(Clone)]
 pub struct State {
-    s3: Client,
     chain: Arc<ResolverChain>,
-    bucket: String,
+    storage: Arc<Storage>,
     default_template: Option<String>,
 }
 
 impl State {
-    /// Create a new default state object.
-    pub async fn new(bucket: &str, default_template: Option<&str>) -> Result<Self> {
-        let config = default_aws_config().await?;
+    /// Create a new state object.
+    pub fn new(chain: ResolverChain, storage: Storage, default_template: Option<&str>) -> Self {
+        Self {
+            chain: Arc::new(chain),
+            storage: Arc::new(storage),
+            default_template: default_template.map(String::from),
+        }
+    }
+
+    /// Initialize the default state for the server.
+    pub async fn from_env(bucket: &str, default_template: Option<&str>) -> Self {
+        let config = default_aws_config().await;
         let mut chain = ResolverChain::new();
         chain.add(AwsSecrets::new(&config));
-
-        Ok(Self {
-            s3: Client::new(&config),
-            chain: Arc::new(chain),
-            bucket: bucket.into(),
-            default_template: default_template.map(String::from),
-        })
+        let storage = Storage::S3(Client::new(&config), bucket.into());
+        Self::new(chain, storage, default_template)
     }
 
     /// Read a configuration template from S3.
     pub async fn read_template(&self, env: &str) -> Result<Value> {
-        info!(%env, "reading config template");
-        let key = format!("{env}.json");
-        let resp = self
-            .s3
-            .get_object()
-            .bucket(&self.bucket)
-            .key(key)
-            .send()
-            .await?;
-
-        let data = resp.body.collect().await?;
-        let bytes = data.into_bytes();
-        Ok(serde_json::from_str(str::from_utf8(&bytes)?)?)
+        self.storage.get(env).await
     }
 
     /// Atomically persist a configuration template to S3.
     pub async fn write_template(&self, env: &str, template: &Value) -> Result<()> {
-        info!(%env, "writing config template");
-        let key = format!("{env}.json");
-        let content = serde_json::to_vec(template)?.into();
-
-        self.s3
-            .put_object()
-            .bucket(&self.bucket)
-            .key(key)
-            .body(content)
-            .send()
-            .await?;
-
-        Ok(())
+        self.storage.set(env, template).await
     }
 
     /// Read a configuration template from S3 and populate templated values.
@@ -94,22 +73,7 @@ impl State {
     }
 
     /// Return a list of available configuration templates from S3.
-    pub async fn list_available_configs(&self) -> Result<Value> {
-        let objects = self
-            .s3
-            .list_objects_v2()
-            .bucket(&self.bucket)
-            .send()
-            .await?;
-
-        let mut configs = Vec::new();
-        for obj in objects.contents().unwrap_or_default() {
-            // Only return json files to users.
-            let object_name = obj.key().context("S3 object is missing key")?;
-            if let Some(stripped) = object_name.strip_suffix(".json") {
-                configs.push(stripped);
-            }
-        }
-        Ok(configs.into())
+    pub async fn list_available_configs(&self) -> Result<Vec<String>> {
+        self.storage.list().await
     }
 }

@@ -6,7 +6,7 @@ use anyhow::Result;
 use clap::Parser;
 use tracing::info;
 
-use crate::server::server;
+use crate::server::{server, state::State};
 
 /// A simple, self-hosted, high-performance remote configuration service.
 #[derive(Parser, Debug)]
@@ -34,7 +34,8 @@ impl Args {
 }
 
 async fn run_server(port: u16, bucket: &str, default_template: Option<&str>) -> Result<()> {
-    let app = server(bucket, default_template).await?;
+    let state = State::from_env(bucket, default_template).await;
+    let app = server(state);
 
     let addr: SocketAddr = (Ipv6Addr::UNSPECIFIED, port).into();
     info!(?addr, "running cadre");

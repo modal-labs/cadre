@@ -18,16 +18,14 @@ pub mod storage;
 pub mod template;
 
 /// Web server for handling requests.
-pub async fn server(bucket: &str, default_template: Option<&str>) -> Result<Router> {
-    let state = State::new(bucket, default_template).await?;
-
-    Ok(Router::new()
+pub fn server(state: State) -> Router {
+    Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))
         .route("/t/:env", get(get_template_handler).put(put_handler))
         .route("/c", get(get_all_configs_handler))
         .route("/c/:env", get(get_config_handler))
         .route("/ping", get(|| async { "cadre ok" }))
-        .layer(Extension(state)))
+        .layer(Extension(state))
 }
 
 async fn get_template_handler(
@@ -58,7 +56,7 @@ async fn get_config_handler(
 
 async fn get_all_configs_handler(
     Extension(state): Extension<State>,
-) -> Result<Json<Value>, StatusCode> {
+) -> Result<Json<Vec<String>>, StatusCode> {
     match state.list_available_configs().await {
         Ok(value) => Ok(Json(value)),
         Err(err) => {
