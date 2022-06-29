@@ -125,4 +125,17 @@ mod tests {
             }),
         );
     }
+
+    #[test]
+    fn merge_templates_deep() {
+        let src = json!({"a": {"b": {"c": {"d": "e"}}}});
+
+        let mut dest = json!({});
+        merge_templates(&mut dest, &src);
+        assert_eq!(dest, src);
+
+        let mut dest = json!({"a": {"b": {"c": {"k": "l"}}}});
+        merge_templates(&mut dest, &src);
+        assert_eq!(dest, json!({"a": {"b": {"c": {"d": "e", "k": "l"}}}}));
+    }
 }
