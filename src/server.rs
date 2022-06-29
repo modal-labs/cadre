@@ -10,11 +10,15 @@ use axum::{http::StatusCode, response::Html, Json, Router};
 use serde_json::Value;
 use tracing::{error, warn};
 
-use crate::storage::Storage;
+use self::state::State;
+
+pub mod resolver;
+pub mod state;
+pub mod template;
 
 /// Web server for handling requests.
 pub async fn server(bucket: &str, default_template: Option<&str>) -> Result<Router> {
-    let storage = Storage::new(bucket, default_template).await?;
+    let state = State::new(bucket, default_template).await?;
 
     Ok(Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))
@@ -22,14 +26,14 @@ pub async fn server(bucket: &str, default_template: Option<&str>) -> Result<Rout
         .route("/c", get(get_all_configs_handler))
         .route("/c/:env", get(get_config_handler))
         .route("/ping", get(|| async { "cadre ok" }))
-        .layer(Extension(storage)))
+        .layer(Extension(state)))
 }
 
 async fn get_template_handler(
-    Extension(storage): Extension<Storage>,
+    Extension(state): Extension<State>,
     Path(env): Path<String>,
 ) -> Result<Json<Value>, StatusCode> {
-    match storage.read_template(&env).await {
+    match state.read_template(&env).await {
         Ok(value) => Ok(Json(value)),
         Err(err) => {
             warn!(%env, ?err, "problem getting template");
@@ -39,10 +43,10 @@ async fn get_template_handler(
 }
 
 async fn get_config_handler(
-    Extension(storage): Extension<Storage>,
+    Extension(state): Extension<State>,
     Path(env): Path<String>,
 ) -> Result<Json<Value>, StatusCode> {
-    match storage.load_config(&env).await {
+    match state.load_config(&env).await {
         Ok(value) => Ok(Json(value)),
         Err(err) => {
             warn!(%env, ?err, "problem reading config");
@@ -52,9 +56,9 @@ async fn get_config_handler(
 }
 
 async fn get_all_configs_handler(
-    Extension(storage): Extension<Storage>,
+    Extension(state): Extension<State>,
 ) -> Result<Json<Value>, StatusCode> {
-    match storage.list_available_configs().await {
+    match state.list_available_configs().await {
         Ok(value) => Ok(Json(value)),
         Err(err) => {
             warn!(?err, "problem reading all configs");
@@ -64,11 +68,11 @@ async fn get_all_configs_handler(
 }
 
 async fn put_handler(
-    Extension(storage): Extension<Storage>,
+    Extension(state): Extension<State>,
     Path(env): Path<String>,
     body: Json<Value>,
 ) -> Result<(), StatusCode> {
-    match storage.write_template(&env, &body).await {
+    match state.write_template(&env, &body).await {
         Ok(_) => Ok(()),
         Err(err) => {
             error!(?err, "could not put config");

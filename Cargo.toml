@@ -13,6 +13,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = { version = "1.0.56", features = ["backtrace"] }
+async-trait = "0.1.56"
 aws-config = "0.13.0"
 aws-sdk-s3 = "0.13.0"
 aws-sdk-secretsmanager = "0.13.0"
