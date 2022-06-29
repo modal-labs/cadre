@@ -5,7 +5,7 @@
 
 use anyhow::Result;
 use axum::extract::{Extension, Path};
-use axum::routing::{get, put};
+use axum::routing::get;
 use axum::{http::StatusCode, response::Html, Json, Router};
 use serde_json::Value;
 use tracing::{error, warn};
@@ -18,8 +18,7 @@ pub async fn server(bucket: &str, default_template: Option<&str>) -> Result<Rout
 
     Ok(Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))
-        .route("/w/:env", put(put_handler))
-        .route("/t/:env", get(get_template_handler))
+        .route("/t/:env", get(get_template_handler).put(put_handler))
         .route("/c", get(get_all_configs_handler))
         .route("/c/:env", get(get_config_handler))
         .route("/ping", get(|| async { "cadre ok" }))
