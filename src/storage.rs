@@ -44,7 +44,6 @@ impl Storage {
     /// Read a configuration template from S3.
     pub async fn read_template(&self, env: &str) -> Result<Value> {
         info!(%env, "reading config template");
-
         let key = format!("{env}.json");
         let resp = self
             .s3
