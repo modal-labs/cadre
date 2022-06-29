@@ -188,7 +188,7 @@
         submit.disabled = true;
         try {
           const newValue = editorValue;
-          const resp = await fetch(`/w/${environment}`, {
+          const resp = await fetch(`/t/${environment}`, {
             method: "PUT",
             body: JSON.stringify(newValue),
             headers: { "Content-Type": "application/json" },

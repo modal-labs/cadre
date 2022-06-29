@@ -5,7 +5,7 @@
 
 use anyhow::Result;
 use axum::extract::{Extension, Path};
-use axum::routing::{get, put};
+use axum::routing::get;
 use axum::{http::StatusCode, response::Html, Json, Router};
 use serde_json::Value;
 use tracing::{error, warn};
@@ -18,8 +18,7 @@ pub async fn server(bucket: &str, default_template: Option<&str>) -> Result<Rout
 
     Ok(Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))
-        .route("/w/:env", put(put_handler))
-        .route("/t/:env", get(get_template_handler))
+        .route("/t/:env", get(get_template_handler).put(put_handler))
         .route("/c", get(get_all_configs_handler))
         .route("/c/:env", get(get_config_handler))
         .route("/ping", get(|| async { "cadre ok" }))
@@ -43,7 +42,7 @@ async fn get_config_handler(
     Extension(storage): Extension<Storage>,
     Path(env): Path<String>,
 ) -> Result<Json<Value>, StatusCode> {
-    match storage.read_config(&env).await {
+    match storage.load_config(&env).await {
         Ok(value) => Ok(Json(value)),
         Err(err) => {
             warn!(%env, ?err, "problem reading config");
@@ -69,7 +68,7 @@ async fn put_handler(
     Path(env): Path<String>,
     body: Json<Value>,
 ) -> Result<(), StatusCode> {
-    match storage.write(&env, &body).await {
+    match storage.write_template(&env, &body).await {
         Ok(_) => Ok(()),
         Err(err) => {
             error!(?err, "could not put config");
