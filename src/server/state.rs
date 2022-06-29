@@ -55,7 +55,9 @@ impl State {
     }
 
     /// Return a list of available configuration templates from S3.
-    pub async fn list_available_configs(&self) -> Result<Vec<String>> {
-        self.storage.list().await
+    pub async fn list_configs(&self) -> Result<Vec<String>> {
+        let mut templates = self.storage.list().await?;
+        templates.sort_unstable();
+        Ok(templates)
     }
 }

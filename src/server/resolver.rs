@@ -101,10 +101,10 @@ impl Resolver for AwsSecrets {
 }
 
 /// A resolver that simply echos the input as a string, used for testing.
-#[cfg(test)]
+#[doc(hidden)]
 pub struct EchoName;
 
-#[cfg(test)]
+#[doc(hidden)]
 #[async_trait]
 impl Resolver for EchoName {
     fn prefix(&self) -> &'static str {

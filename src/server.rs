@@ -22,7 +22,7 @@ pub fn server(state: State) -> Router {
     Router::new()
         .route("/", get(|| async { Html(include_str!("index.html")) }))
         .route("/t/:env", get(get_template_handler).put(put_handler))
-        .route("/c", get(get_all_configs_handler))
+        .route("/c", get(list_configs_handler))
         .route("/c/:env", get(get_config_handler))
         .route("/ping", get(|| async { "cadre ok" }))
         .layer(Extension(state))
@@ -54,10 +54,10 @@ async fn get_config_handler(
     }
 }
 
-async fn get_all_configs_handler(
+async fn list_configs_handler(
     Extension(state): Extension<State>,
 ) -> Result<Json<Vec<String>>, StatusCode> {
-    match state.list_available_configs().await {
+    match state.list_configs().await {
         Ok(value) => Ok(Json(value)),
         Err(err) => {
             warn!(?err, "problem reading all configs");
