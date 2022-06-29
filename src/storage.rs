@@ -64,7 +64,8 @@ impl Storage {
         if let Some(default_env) = &self.default_template {
             if env != default_env {
                 let mut default_template = self.fetch_object(default_env).await?;
-                merge_templates(&mut default_template, &template)
+                merge_templates(&mut default_template, &template);
+                return Ok(default_template);
             }
         }
         Ok(template)
