@@ -60,11 +60,11 @@ impl Storage {
 
     /// Read a configuration template from S3.
     pub async fn read_template(&self, env: &str) -> Result<Value> {
-        let mut template = self.fetch_object(env).await?;
+        let template = self.fetch_object(env).await?;
         if let Some(default_env) = &self.default_template {
             if env != default_env {
-                let default_template = self.fetch_object(default_env).await?;
-                merge_templates(&mut template, &default_template)
+                let mut default_template = self.fetch_object(default_env).await?;
+                merge_templates(&mut default_template, &template)
             }
         }
         Ok(template)
