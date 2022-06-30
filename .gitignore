@@ -1,1 +1,18 @@
+**/build/
+**/dist/
+**/package/
+
+**/.DS_Store
+/.idea
+/.vscode
+
 /target
+
+# Python distribution files
+**/__pycache__/
+**/*.egg-info/
+**/.log/
+**/.venv*
+**/venv
+**/.python-version
+**/.mypy_cache/
