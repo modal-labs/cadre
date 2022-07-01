@@ -10,7 +10,7 @@ on:
 
 jobs:
   rust:
-    name: Lint and Test
+    name: Rust Lint and Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -44,7 +44,7 @@ jobs:
       - run: cargo +nightly fmt -- --check
 
   python:
-    name: Test
+    name: Python Client Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
