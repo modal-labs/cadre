@@ -21,15 +21,20 @@ class Client:
     timeout: float, default 0.3
         Request timeout.
     """
-    def __init__(self, origin:str, timeout:float = 0.3):
+
+    def __init__(self, origin: str, timeout: float = 0.3):
         self.origin = origin
         self.timeout = timeout
 
-    def _build_uri(self, path:str) -> str:
+    def _build_uri(self, path: str) -> str:
         return os.path.join(self.origin, path)
 
-    async def _send(self, req: httpx.Request, parse_json:bool = True) -> httpx.AsyncClient:
-        async with httpx.AsyncClient(base_url=self.origin, timeout=self.timeout) as client:
+    async def _send(
+        self, req: httpx.Request, parse_json: bool = True
+    ) -> httpx.AsyncClient:
+        async with httpx.AsyncClient(
+            base_url=self.origin, timeout=self.timeout
+        ) as client:
             try:
                 res = await client.send(req)
             except httpx.TimeoutException:
@@ -37,19 +42,21 @@ class Client:
                 raise CadreException("Cadre did respond within timeout deadline.")
 
             if res.status_code != 200:
-                raise CadreException(f"Cadre responded with bad status code: {res.status_code}")
+                raise CadreException(
+                    f"Cadre responded with bad status code: {res.status_code}"
+                )
 
             if parse_json:
                 return res.json()
             return res.text
 
-    async def _get(self, uri:str) -> dict[str, Any]:        
+    async def _get(self, uri: str) -> dict[str, Any]:
         request = httpx.Request("GET", self._build_uri(uri))
         return await self._send(request)
-    
+
     async def ping(self) -> str:
         """Verifies that Cadre is running by querying its healthcheck endpoint.
-        
+
         Returns
         -------
         str
@@ -58,15 +65,15 @@ class Client:
         request = httpx.Request("GET", self._build_uri("ping"))
         return await self._send(request, parse_json=False)
 
-    async def get_template(self, env:str) -> dict[str, Any]:
+    async def get_template(self, env: str) -> dict[str, Any]:
         """Gets the corresponding JSON template to an environment. This is
         the original template without the retrieval of secrets.
-        
+
         Parameters
         ----------
         env: str
             Environment corresponding to a JSON template. For example: "prod".
-        
+
         Returns
         -------
         dict[str, Any]
@@ -74,16 +81,16 @@ class Client:
             unparsed templating marks (e.g. {*"test": "aws:prod/Secret"}).
         """
         return await self._get(f"t/{env}")
-    
-    async def load_config(self, env:str) -> dict[str, Any]:
+
+    async def load_config(self, env: str) -> dict[str, Any]:
         """Gets the parsed JSON template populated with secrets from
         a secrets store (e.g. AWS Secrets Manager).
-        
+
         Parameters
         ----------
         env: str
             Environment corresponding to a JSON template. For example: "prod".
-        
+
         Returns
         -------
         dict[str, Any]
@@ -96,18 +103,18 @@ class Client:
                   retrieved from AWS Secrets Manager
         """
         return await self._get(f"c/{env}")
-    
+
     async def list_configs(self) -> list[str]:
         """Lists available configs.
-        
+
         Returns
         -------
         list[str]
             List of available configs.
         """
         return await self._get(f"c")
-    
-    async def write_template(self, env:str, json:dict[str, Any]) -> None:
+
+    async def write_template(self, env: str, json: dict[str, Any]) -> None:
         """Writes template JSON config to Cadre.
 
         Parameters

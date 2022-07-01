@@ -12,19 +12,16 @@ import pytest
 import cadre
 
 TEST_ENVIRONMENT: str = "test"
-CONFIG_TEMPLATE:dict[str, Union[str, dict[str]]] = {
-        "a": "a",
-        "b": "b",
-        "c": {
-            "a": "a",
-            "b": "b"
-        },
-    }
+CONFIG_TEMPLATE: dict[str, Union[str, dict[str]]] = {
+    "a": "a",
+    "b": "b",
+    "c": {"a": "a", "b": "b"},
+}
 
 
 @asynccontextmanager
 async def start_cadre():
-    
+
     # Builds cadre binary.
     subprocess.run("cargo build --release --manifest-path ../Cargo.toml".split())
 
@@ -42,21 +39,23 @@ async def start_cadre():
             "--port",
             str(port),
             "--local-dir",
-            str(tmpdir)
+            str(tmpdir),
         ]
 
         print(f"running cadre => {' '.join(cmd)}")
-        proc = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
+        )
         yield f"http://localhost:{port}"
 
     # Terminate process and log any potential error.
     proc.kill()
     stdout, stderr = await proc.communicate()
-    print(f'[{cmd!r} exited with {proc.returncode}]')
+    print(f"[{cmd!r} exited with {proc.returncode}]")
     if stdout:
-        print(f'[stdout]\n{stdout.decode()}')
+        print(f"[stdout]\n{stdout.decode()}")
     if stderr:
-        print(f'[stderr]\n{stderr.decode()}')
+        print(f"[stderr]\n{stderr.decode()}")
 
 
 @pytest.mark.asyncio
@@ -74,7 +73,7 @@ async def test_read():
 async def test_write():
     async with start_cadre() as cadre_url:
         client = cadre.Client(origin=cadre_url)
-    
+
         environment = "write_test"
         await client.write_template(env=environment, json={"test": "foo"})
         assert "foo" == (await client.get_template(environment)).get("test")
