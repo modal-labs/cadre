@@ -46,6 +46,9 @@ async def start_cadre():
         proc = await asyncio.create_subprocess_exec(
             *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
         )
+
+        # Wait for cadre to startup.
+        await asyncio.sleep(0.1)
         yield f"http://localhost:{port}"
 
     # Terminate process and log any potential error.
@@ -79,3 +82,11 @@ async def test_write():
         assert "foo" == (await client.get_template(environment)).get("test")
         assert "foo" == (await client.load_config(environment)).get("test")
         assert environment in await client.list_configs()
+
+@pytest.mark.asyncio
+async def test_failure():
+    async with start_cadre() as cadre_url:
+        client = cadre.Client(origin=cadre_url)
+
+        with pytest.raises(cadre.CadreException):
+            await client.get_template("no-env")

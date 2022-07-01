@@ -13,7 +13,7 @@ jobs:
     name: Lint and Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -33,7 +33,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -42,3 +42,32 @@ jobs:
           components: rustfmt
 
       - run: cargo +nightly fmt -- --check
+
+  python:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+    
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Get cached python dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: |
+            ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: ${{ runner.os }}-${{ env.pythonLocation }}-
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements.dev.txt
+
+      - name: Tests
+        run: |
+          pytest -v -s --cov-report term-missing --cov=cadre/
