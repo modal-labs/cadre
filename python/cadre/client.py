@@ -1,8 +1,9 @@
 import os
-import httpx
 import traceback
-
 from typing import Any
+
+import httpx
+
 
 class CadreException(Exception):
     pass
@@ -60,6 +61,6 @@ class Client:
     async def list_configs(self) -> dict[str, Any]:
         return await self._get(f"c")
     
-    async def write_template(self, env:str) -> dict[str, Any]:
-        request = httpx.Request("GET", f"/t/{env}")
-        return await self._send(request)
+    async def write_template(self, env:str, json:dict[str, Any]) -> dict[str, Any]:
+        request = httpx.Request("PUT", self._build_uri(f"t/{env}"), json=json)
+        return await self._send(request, parse_json=False)
