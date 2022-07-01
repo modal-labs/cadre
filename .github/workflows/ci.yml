@@ -46,6 +46,10 @@ jobs:
   python:
     name: Python Client Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./python
+
     steps:
       - uses: actions/checkout@v3
     
