@@ -47,10 +47,10 @@ impl State {
         if let Some(default_env) = &self.default_template {
             if env != default_env {
                 let default_template = self.read_template(default_env).await?;
+                populate_template(&mut template, &self.chain).await?;
                 merge_templates(&mut template, &default_template)
             }
         }
-        populate_template(&mut template, &self.chain).await?;
         Ok(template)
     }
 
