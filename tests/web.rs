@@ -4,7 +4,7 @@ use std::net::TcpListener;
 
 use anyhow::Result;
 use cadre::server::{
-    resolver::{EchoName, ResolverChain},
+    resolver::{EchoJson, ResolverChain},
     server,
     state::State,
     storage::Storage,
@@ -15,7 +15,7 @@ use tokio::task::JoinHandle;
 
 async fn spawn_test_server() -> Result<(CadreClient, JoinHandle<()>)> {
     let mut chain = ResolverChain::new();
-    chain.add(EchoName);
+    chain.add(EchoJson);
     let storage = Storage::Memory(Default::default());
     let state = State::new(chain, storage, Some("default"));
 
@@ -66,7 +66,7 @@ async fn override_resolvers() -> Result<()> {
         .write_template("default", &json!({ "foo": "bar" }))
         .await?;
     client
-        .write_template("hello", &json!({ "*foo": "echo:banana" }))
+        .write_template("hello", &json!({ "*foo": "echo:\"banana\"" }))
         .await?;
 
     assert_eq!(

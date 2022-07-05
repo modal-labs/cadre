@@ -58,7 +58,7 @@ mod tests {
     use serde_json::json;
 
     use super::{merge_templates, populate_template};
-    use crate::server::resolver::{EchoName, ResolverChain};
+    use crate::server::resolver::{EchoJson, ResolverChain};
 
     #[test]
     fn merge_templates_basic() {
@@ -129,13 +129,17 @@ mod tests {
 
     #[tokio::test]
     async fn populate_with_resolver() {
-        let mut value = json!({"a": {"value": "3", "*rep": "echo:hello"}});
-
         let mut chain = ResolverChain::new();
-        chain.add(EchoName);
+        chain.add(EchoJson);
 
+        let mut value = json!({"a": {"value": "3", "*rep": "echo:\"hello\""}});
         populate_template(&mut value, &chain).await.unwrap();
         assert_eq!(value, json!({"a": {"value": "3", "rep": "hello"}}));
+
+        // Recursive resolvers
+        let mut value = json!({"*a": "echo:{\"*b\": \"echo:4\"}"});
+        populate_template(&mut value, &chain).await.unwrap();
+        assert_eq!(value, json!({"a": {"b": 4}}));
     }
 
     #[tokio::test]
