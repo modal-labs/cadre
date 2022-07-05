@@ -38,13 +38,10 @@ pub async fn populate_template(value: &mut Value, chain: &ResolverChain) -> Resu
 pub fn merge_templates(dest: &mut Value, src: &Value) {
     if let (Value::Object(dest), Value::Object(src)) = (dest, src) {
         for (key, value) in src {
-            let key_raw = key.strip_prefix(TEMPLATE_MARK).unwrap_or(key);
-            if !dest.contains_key(key_raw)
-                && !dest.contains_key(&format!("{TEMPLATE_MARK}{key_raw}"))
-            {
+            if !dest.contains_key(key) {
                 // Total replacement: dest does not contain the key.
                 dest.insert(key.clone(), value.clone());
-            } else if key == key_raw && dest.contains_key(key) {
+            } else if dest.contains_key(key) {
                 // Partial replacement: both contain raw non-templated key,
                 // so we can merge their objects' subkeys.
                 merge_templates(dest.get_mut(key).unwrap(), value);
@@ -66,6 +63,42 @@ mod tests {
         let src = json!({ "c": "d" });
         merge_templates(&mut dest, &src);
         assert_eq!(dest, json!({ "a": "b", "c": "d" }));
+    }
+
+    #[tokio::test]
+    async fn merge_template_with_populate() {
+        let mut chain = ResolverChain::new();
+        chain.add(EchoName);
+
+        // Templates are merged correctly when base templated keys exist.
+        let mut dest = json!({ "*a": "echo:hello" });
+        let src = json!({ "c": "d" });
+
+        populate_template(&mut dest, &chain).await.unwrap();
+        merge_templates(&mut dest, &src);
+        assert_eq!(dest, json!({ "a": "hello", "c": "d" }));
+
+        // Nested templates are merged superimposing keys from destination,
+        // event if the latter is templated.
+        let mut dest = json!({
+            "a": {
+                "*b": "echo:hello"
+            }
+        });
+        let src = json!({ "a": {
+            "b": "foo",
+            "c": "bar",
+        } });
+
+        populate_template(&mut dest, &chain).await.unwrap();
+        merge_templates(&mut dest, &src);
+        assert_eq!(
+            dest,
+            json!({ "a": {
+            "b": "hello",
+            "c": "bar",
+        } })
+        );
     }
 
     #[test]

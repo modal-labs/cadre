@@ -44,10 +44,11 @@ impl State {
     /// well, if it is provided.
     pub async fn load_config(&self, env: &str) -> Result<Value> {
         let mut template = self.read_template(env).await?;
+        populate_template(&mut template, &self.chain).await?;
         if let Some(default_env) = &self.default_template {
             if env != default_env {
-                let default_template = self.read_template(default_env).await?;
-                populate_template(&mut template, &self.chain).await?;
+                let mut default_template = self.read_template(default_env).await?;
+                populate_template(&mut default_template, &self.chain).await?;
                 merge_templates(&mut template, &default_template)
             }
         }
