@@ -66,25 +66,20 @@ async fn override_resolvers() -> Result<()> {
         .write_template(
             "default",
             &json!({ "a": {
-            "b": "foo"
+            "b": "foo",
+            "c": "banana"
         } }),
         )
         .await?;
     client
-        .write_template(
-            "hello",
-            &json!({ "a": {
-            "*b": "echo:\"banana\"",
-            "c": "foo"
-        }  }),
-        )
+        .write_template("hello", &json!({ "*a": "echo:{\"b\": \"bar\"}"  }))
         .await?;
 
     assert_eq!(
         client.load_config("hello").await?,
         json!({ "a": {
-            "b": "banana",
-            "c": "foo"
+            "b": "bar",
+            "c": "banana"
         } })
     );
 
