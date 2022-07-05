@@ -63,15 +63,24 @@ async fn override_resolvers() -> Result<()> {
     let (client, _handle) = spawn_test_server().await?;
 
     client
-        .write_template("default", &json!({ "foo": "bar" }))
+        .write_template(
+            "default",
+            &json!({ "a": {
+            "b": "foo",
+            "c": "banana"
+        } }),
+        )
         .await?;
     client
-        .write_template("hello", &json!({ "*foo": "echo:\"banana\"" }))
+        .write_template("hello", &json!({ "*a": "echo:{\"b\": \"bar\"}"  }))
         .await?;
 
     assert_eq!(
         client.load_config("hello").await?,
-        json!({ "foo": "banana" })
+        json!({ "a": {
+            "b": "bar",
+            "c": "banana"
+        } })
     );
 
     Ok(())
