@@ -74,7 +74,7 @@ async fn override_resolvers() -> Result<()> {
         .write_template(
             "hello",
             &json!({ "a": {
-            "*b": "echo:banana",
+            "*b": "echo:\"banana\"",
             "c": "foo"
         }  }),
         )

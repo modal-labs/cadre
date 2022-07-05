@@ -68,10 +68,10 @@ mod tests {
     #[tokio::test]
     async fn merge_template_with_populate() {
         let mut chain = ResolverChain::new();
-        chain.add(EchoName);
+        chain.add(EchoJson);
 
         // Templates are merged correctly when base templated keys exist.
-        let mut dest = json!({ "*a": "echo:hello" });
+        let mut dest = json!({ "*a": "echo:\"hello\"" });
         let src = json!({ "c": "d" });
 
         populate_template(&mut dest, &chain).await.unwrap();
@@ -82,7 +82,7 @@ mod tests {
         // event if the latter is templated.
         let mut dest = json!({
             "a": {
-                "*b": "echo:hello"
+                "*b": "echo:\"hello\""
             }
         });
         let src = json!({ "a": {
