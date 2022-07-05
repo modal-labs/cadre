@@ -100,19 +100,19 @@ impl Resolver for AwsSecrets {
     }
 }
 
-/// A resolver that simply echos the input as a string, used for testing.
+/// A resolver that simply echos the input as JSON, used for testing.
 #[doc(hidden)]
-pub struct EchoName;
+pub struct EchoJson;
 
 #[doc(hidden)]
 #[async_trait]
-impl Resolver for EchoName {
+impl Resolver for EchoJson {
     fn prefix(&self) -> &'static str {
         "echo"
     }
 
     async fn resolve(&self, name: &str) -> Result<Value> {
-        Ok(name.into())
+        Ok(serde_json::from_str(name)?)
     }
 }
 
@@ -121,7 +121,7 @@ mod tests {
     use anyhow::Result;
     use serde_json::json;
 
-    use super::{EchoName, ResolverChain};
+    use super::{EchoJson, ResolverChain};
 
     #[tokio::test]
     async fn empty_resolver() {
@@ -132,11 +132,11 @@ mod tests {
     #[tokio::test]
     async fn echo_resolver() -> Result<()> {
         let mut chain = ResolverChain::new();
-        assert!(chain.add(EchoName));
-        assert_eq!(chain.resolve("echo:world").await?, json!("world"));
+        assert!(chain.add(EchoJson));
+        assert_eq!(chain.resolve("echo:\"world\"").await?, json!("world"));
         assert!(chain.resolve("hello:world").await.is_err());
 
-        assert!(!chain.add(EchoName));
+        assert!(!chain.add(EchoJson));
         Ok(())
     }
 }
