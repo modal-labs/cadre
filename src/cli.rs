@@ -24,20 +24,20 @@ pub async fn default_aws_config() -> SdkConfig {
 #[clap(version, about, long_about = None)]
 pub struct Args {
     /// Port to serve cadre on.
-    #[clap(short, long, default_value_t = 7608)]
+    #[clap(short, long, default_value_t = 7608, env = "CADRE_PORT")]
     port: u16,
 
     /// S3 bucket to use for persisting template JSON files.
-    #[clap(long)]
+    #[clap(long, env = "CADRE_BUCKET")]
     bucket: Option<String>,
 
     /// Local directory to use for persisting template JSON files.
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str), env = "CADRE_LOCAL_DIR")]
     local_dir: Option<PathBuf>,
 
     /// Sets a default templated JSON to be used for other environments
     /// to build upon. Ignored if left empty.
-    #[clap(long)]
+    #[clap(long, env = "CADRE_DEFAULT_TEMPLATE")]
     default_template: Option<String>,
 }
 
