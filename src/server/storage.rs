@@ -25,7 +25,7 @@ pub enum Storage {
 
 impl Storage {
     /// Retrieve a value from storage.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub(crate) async fn get(&self, env: &str) -> Result<Value> {
         info!("reading template");
         match self {
@@ -46,7 +46,7 @@ impl Storage {
     }
 
     /// Set a value in storage.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub(crate) async fn set(&self, env: &str, value: &Value) -> Result<()> {
         info!("writing template");
         match self {
@@ -73,7 +73,7 @@ impl Storage {
     }
 
     /// List all of the templates in storage.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub(crate) async fn list(&self) -> Result<Vec<String>> {
         info!("listing templates");
         match self {
