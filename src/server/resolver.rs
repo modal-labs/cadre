@@ -6,9 +6,9 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use aws_sdk_secretsmanager::Client;
 use aws_types::sdk_config::SdkConfig;
-use cached::{Cached, TimedCache};
-use parking_lot::Mutex;
 use serde_json::Value;
+
+use super::cache::TimedCache;
 
 /// Collection of resolvers for populating values in templates.
 #[derive(Default)]
@@ -60,7 +60,7 @@ pub trait Resolver: Send + Sync {
 /// Client for retrieving secrets from AWS Secrets Manager.
 pub struct AwsSecrets {
     client: Client,
-    cache: Mutex<TimedCache<String, Value>>,
+    cache: TimedCache<String, Value>,
 }
 
 impl AwsSecrets {
@@ -69,7 +69,7 @@ impl AwsSecrets {
         let client = Client::new(aws_config);
         Self {
             client,
-            cache: Mutex::new(TimedCache::with_lifespan(60)),
+            cache: TimedCache::new(45.0, 60.0),
         }
     }
 }
@@ -81,21 +81,20 @@ impl Resolver for AwsSecrets {
     }
 
     async fn resolve(&self, name: &str) -> Result<Value> {
-        let name = name.to_string();
-        if let Some(value) = self.cache.lock().cache_get(&name) {
-            return Ok(value.clone());
+        if let Some(value) = self.cache.get(name) {
+            return Ok(value);
         }
 
         let resp = self
             .client
             .get_secret_value()
-            .secret_id(&name)
+            .secret_id(name)
             .send()
             .await?;
 
         let secret = resp.secret_string().context("missing secret string")?;
         let value: Value = serde_json::from_str(secret)?;
-        self.cache.lock().cache_set(name, value.clone());
+        self.cache.insert(name.into(), value.clone());
         Ok(value)
     }
 }

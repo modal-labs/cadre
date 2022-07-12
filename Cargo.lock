@@ -497,17 +497,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cached"
-version = "0.34.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12f5cd208ba696f870238022d81ca1d80ed9d696fd62341c747f2d8f6ecdd9fe"
-dependencies = [
- "hashbrown",
- "once_cell",
- "thiserror",
-]
-
-[[package]]
 name = "cadre"
 version = "0.5.1"
 dependencies = [
@@ -518,8 +507,8 @@ dependencies = [
  "aws-sdk-secretsmanager",
  "aws-types",
  "axum",
- "cached",
  "clap",
+ "fastrand",
  "hyper",
  "parking_lot",
  "serde",
@@ -1459,26 +1448,6 @@ name = "textwrap"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
-
-[[package]]
-name = "thiserror"
-version = "1.0.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd829fe32373d27f76265620b5309d0340cb8550f523c1dda251d6298069069a"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0396bc89e626244658bef819e22d0cc459e795a5ebe878e6ec336d1674a8d79a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "thread_local"

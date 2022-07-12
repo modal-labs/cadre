@@ -12,6 +12,7 @@ use tracing::{error, warn};
 
 use self::state::State;
 
+pub mod cache;
 pub mod resolver;
 pub mod state;
 pub mod storage;
