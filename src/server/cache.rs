@@ -33,7 +33,7 @@ impl<K: Eq + Hash, V: Clone> TimedCache<K, V> {
     {
         let mut inner = self.inner.lock();
         let (expire_time, value) = inner.get(k)?;
-        if *expire_time < Instant::now() {
+        if *expire_time >= Instant::now() {
             Some(value.clone())
         } else {
             inner.remove(k);
@@ -46,5 +46,24 @@ impl<K: Eq + Hash, V: Clone> TimedCache<K, V> {
         let ttl = self.min_ttl + fastrand::f64() * (self.max_ttl - self.min_ttl);
         let expire_time = Instant::now() + Duration::from_secs_f64(ttl);
         self.inner.lock().insert(k, (expire_time, v));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tokio::time::{self, Duration};
+
+    use super::TimedCache;
+
+    #[tokio::test(start_paused = true)]
+    async fn timed_expire() {
+        let cache = TimedCache::new(5.0, 10.0);
+        cache.insert("foo", "bar");
+
+        time::advance(Duration::from_secs(3)).await;
+        assert_eq!(cache.get("foo"), Some("bar"));
+
+        time::advance(Duration::from_secs(10)).await;
+        assert_eq!(cache.get("foo"), None);
     }
 }

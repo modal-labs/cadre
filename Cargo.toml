@@ -29,3 +29,6 @@ tempfile = "3.3.0"
 tokio = { version = "1.19.2", features = ["full"] }
 tracing = "0.1.32"
 tracing-subscriber = "0.3.11"
+
+[dev-dependencies]
+tokio = { version = "1.19.2", features = ["test-util"] }
