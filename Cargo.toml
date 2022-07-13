@@ -19,8 +19,8 @@ aws-sdk-s3 = "0.13.0"
 aws-sdk-secretsmanager = "0.13.0"
 aws-types = "0.13.0"
 axum = "0.5.9"
-cached = { version = "0.34.1", default-features = false }
 clap = { version = "3.2.6", features = ["derive", "env"] }
+fastrand = "1.7.0"
 hyper = { version = "0.14.18", features = ["full"] }
 parking_lot = "0.12.1"
 serde = { version = "1.0.137", features = ["derive"] }
@@ -29,3 +29,6 @@ tempfile = "3.3.0"
 tokio = { version = "1.19.2", features = ["full"] }
 tracing = "0.1.32"
 tracing-subscriber = "0.3.11"
+
+[dev-dependencies]
+tokio = { version = "1.19.2", features = ["test-util"] }
