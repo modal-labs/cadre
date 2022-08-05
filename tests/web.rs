@@ -19,10 +19,11 @@ async fn spawn_test_server() -> Result<(CadreClient, JoinHandle<()>)> {
     let storage = Storage::Memory(Default::default());
     let state = State::new(chain, storage, Some("default"));
 
-    let app = server(state);
+    let secret = String::from("test-secret");
+    let app = server(state, Some(secret.clone()));
 
     let listener = TcpListener::bind("localhost:0")?;
-    let client = CadreClient::new(&format!("http://{}", listener.local_addr()?));
+    let client = CadreClient::new(&format!("http://{}", listener.local_addr()?), &secret);
 
     let handle = tokio::spawn(async move {
         axum::Server::from_tcp(listener)

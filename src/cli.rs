@@ -27,6 +27,10 @@ pub struct Args {
     #[clap(short, long, default_value_t = 7608, env = "CADRE_PORT")]
     port: u16,
 
+    /// Secret to verify clients against.
+    #[clap(long, env = "CADRE_SECRET")]
+    secret: Option<String>,
+
     /// S3 bucket to use for persisting template JSON files.
     #[clap(long, env = "CADRE_BUCKET")]
     bucket: Option<String>,
@@ -56,7 +60,7 @@ impl Args {
         };
 
         let state = State::new(chain, storage, self.default_template.as_deref());
-        let app = server(state);
+        let app = server(state, self.secret);
 
         let addr: SocketAddr = (Ipv6Addr::UNSPECIFIED, self.port).into();
         info!(?addr, "running cadre");
