@@ -11,6 +11,7 @@ use axum::response::Response;
 use axum::routing::get;
 use axum::{response::Html, Json, Router};
 use serde_json::Value;
+use tera::Context;
 use tracing::{error, warn};
 
 use self::state::State;
@@ -44,8 +45,8 @@ async fn auth<B>(
 
 /// Web server for handling requests.
 pub fn server(state: State, secret: Option<String>) -> Router {
+    let template_secret = secret.clone();
     Router::new()
-        .route("/", get(|| async { Html(include_str!("index.html")) }))
         .route("/t/:env", get(get_template_handler).put(put_handler))
         .route("/c", get(list_configs_handler))
         .route("/c/:env", get(get_config_handler))
@@ -54,6 +55,23 @@ pub fn server(state: State, secret: Option<String>) -> Router {
             auth(req, next, secret.clone())
         }))
         .route("/ping", get(|| async { "cadre ok" }))
+        .route(
+            "/",
+            get(move || async { get_landing_page_handler(template_secret).await }),
+        )
+}
+
+async fn get_landing_page_handler(
+    template_secret: Option<String>,
+) -> Result<Html<String>, StatusCode> {
+    let template_secret_val = template_secret.unwrap_or_else(|| String::from(""));
+    let mut context = Context::new();
+    context.insert("cadre_secret", &template_secret_val);
+
+    match tera::Tera::one_off(include_str!("index.html"), &context, true) {
+        Ok(template) => Ok(Html(template)),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
 }
 
 async fn get_template_handler(
