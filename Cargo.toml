@@ -18,7 +18,7 @@ aws-config = "0.13.0"
 aws-sdk-s3 = "0.13.0"
 aws-sdk-secretsmanager = "0.13.0"
 aws-types = "0.13.0"
-axum = "0.5.9"
+axum = { version = "0.5.9", features = ["headers"] }
 clap = { version = "3.2.6", features = ["derive", "env"] }
 fastrand = "1.7.0"
 hyper = { version = "0.14.18", features = ["full"] }

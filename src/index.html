@@ -102,6 +102,11 @@
       memory for up to a minute after a given request.
     </p>
 
+    <form id="secret-form" style="margin: 20px 0">
+      Secret:
+      <input id="secret-input" type="text" value="" />
+    </form>
+
     <form id="environment-form" style="margin: 20px 0">
       Environment:
       <input id="environment-input" type="text" value="default" />
@@ -132,18 +137,34 @@
       let clearIndicator = 0;
       const environmentForm = document.getElementById("environment-form");
       const environmentInput = document.getElementById("environment-input");
+      const secretForm = document.getElementById("secret-form");
+      const secretInput = document.getElementById("secret-input");
       const submit = document.getElementById("submit");
       const indicator = document.getElementById("indicator");
       const changes = document.getElementById("changes");
+      
+      // Pass URL parameter secret to form value.
+      const queryString = window.location.search;
+      const urlParams = new URLSearchParams(queryString);
+      secretInput.value = urlParams.get('secret');
 
       let editor = null;
       let environment = environmentInput.value;
+      let secret = secretInput.value;
       let currentValue = {};
       let editorValue = {};
 
+      console.log(environment);
+      console.log(secret);
+
       async function updateEnv() {
         try {
-          const resp = await fetch(`/t/${environment}`);
+          const resp = await fetch(
+            `/t/${environment}`,{
+              headers: {
+                "X-Cadre-Secret": secret
+              }}
+          );
           let value;
           if (resp.ok) {
             value = await resp.json();
@@ -191,7 +212,10 @@
           const resp = await fetch(`/t/${environment}`, {
             method: "PUT",
             body: JSON.stringify(newValue),
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "X-Cadre-Secret": secret
+            },
           });
           if (resp.status === 200) {
             currentValue = newValue;

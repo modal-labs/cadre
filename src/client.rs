@@ -13,18 +13,19 @@ use serde_json::Value;
 pub struct CadreClient {
     client: Client<HttpConnector>,
     origin: String,
+    secret: String,
 }
 
 impl CadreClient {
     /// Create a new client object pointing at a given HTTP origin.
-    #[allow(clippy::unnecessary_unwrap)]
-    pub fn new(origin: &str) -> Self {
+    pub fn new(origin: &str, secret: &str) -> Self {
         let mut connector = HttpConnector::new();
         connector.set_nodelay(true);
 
         Self {
             client: Client::builder().build(connector),
             origin: origin.into(),
+            secret: secret.into(),
         }
     }
 
@@ -43,6 +44,7 @@ impl CadreClient {
     async fn get<T: DeserializeOwned>(&self, uri: &str) -> Result<T> {
         let req = Request::builder()
             .method("GET")
+            .header("X-Cadre-Secret", &self.secret)
             .uri(uri)
             .body(Body::empty())?;
         let resp = self.send(req).await?;
@@ -60,6 +62,7 @@ impl CadreClient {
             .method("PUT")
             .uri(format!("{}/t/{}", self.origin, env))
             .header(CONTENT_TYPE, "application/json")
+            .header("X-Cadre-Secret", &self.secret)
             .body(serde_json::to_string(template)?.into())?;
         self.send(req).await?;
         Ok(())
