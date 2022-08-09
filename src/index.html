@@ -143,13 +143,7 @@
 
       async function updateEnv() {
         try {
-          const resp = await fetch(
-            `/t/${environment}`, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Cadre-Secret": "{{ cadre_secret }}"
-              }});
+          const resp = await fetch(`/t/${environment}`);
           let value;
           if (resp.ok) {
             value = await resp.json();
@@ -197,10 +191,7 @@
           const resp = await fetch(`/t/${environment}`, {
             method: "PUT",
             body: JSON.stringify(newValue),
-            headers: {
-              "Content-Type": "application/json",
-              "X-Cadre-Secret": "{{ cadre_secret }}"
-            },
+            headers: { "Content-Type": "application/json" },
           });
           if (resp.status === 200) {
             currentValue = newValue;
