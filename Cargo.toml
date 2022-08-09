@@ -1,6 +1,6 @@
 [package]
 name = "cadre"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Luis Capelo <luiscape@gmail.com>", "Eric Zhang <ekzhang1@gmail.com>"]
 license = "MIT"
 description = "Cadre is a simple, self-hosted, high-performance remote configuration service."
