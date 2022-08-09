@@ -18,7 +18,6 @@ pub struct CadreClient {
 
 impl CadreClient {
     /// Create a new client object pointing at a given HTTP origin.
-    #[allow(clippy::unnecessary_unwrap)]
     pub fn new(origin: &str, secret: &str) -> Self {
         let mut connector = HttpConnector::new();
         connector.set_nodelay(true);
