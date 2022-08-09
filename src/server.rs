@@ -42,7 +42,6 @@ async fn auth<B>(
 /// Web server for handling requests.
 pub fn server(state: State, secret: String) -> Router {
     Router::new()
-        .route("/", get(|| async { Html(include_str!("index.html")) }))
         .route("/t/:env", get(get_template_handler).put(put_handler))
         .route("/c", get(list_configs_handler))
         .route("/c/:env", get(get_config_handler))
@@ -51,6 +50,7 @@ pub fn server(state: State, secret: String) -> Router {
             auth(req, next, secret.clone())
         }))
         .route("/ping", get(|| async { "cadre ok" }))
+        .route("/", get(|| async { Html(include_str!("index.html")) }))
 }
 
 async fn get_template_handler(

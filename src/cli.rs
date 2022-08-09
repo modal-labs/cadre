@@ -59,11 +59,16 @@ impl Args {
             _ => bail!("must specify exactly one of --bucket or --local-dir"),
         };
 
+        let logged_secret = self.secret.clone();
         let state = State::new(chain, storage, self.default_template.as_deref());
         let app = server(state, self.secret);
 
         let addr: SocketAddr = (Ipv6Addr::UNSPECIFIED, self.port).into();
         info!(?addr, "running cadre");
+        info!(
+            "visit frontend at {}?secret={}",
+            addr, logged_secret
+        );
 
         axum::Server::bind(&addr)
             .serve(app.into_make_service())

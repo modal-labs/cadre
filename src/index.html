@@ -142,18 +142,27 @@
       const submit = document.getElementById("submit");
       const indicator = document.getElementById("indicator");
       const changes = document.getElementById("changes");
+      
+      // Pass URL parameter secret to form value.
+      const queryString = window.location.search;
+      const urlParams = new URLSearchParams(queryString);
+      secretInput.value = urlParams.get('secret');
 
       let editor = null;
       let environment = environmentInput.value;
+      let secret = secretInput.value;
       let currentValue = {};
       let editorValue = {};
+
+      console.log(environment);
+      console.log(secret);
 
       async function updateEnv() {
         try {
           const resp = await fetch(
             `/t/${environment}`,{
               headers: {
-                "X-Cadre-Secret": secretInput
+                "X-Cadre-Secret": secret
               }}
           );
           let value;
@@ -205,7 +214,7 @@
             body: JSON.stringify(newValue),
             headers: {
                 "Content-Type": "application/json",
-                "X-Cadre-Secret": secretInput
+                "X-Cadre-Secret": secret
             },
           });
           if (resp.status === 200) {
