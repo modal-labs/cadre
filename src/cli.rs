@@ -29,7 +29,7 @@ pub struct Args {
 
     /// Secret to verify clients against.
     #[clap(long, env = "CADRE_SECRET")]
-    secret: Option<String>,
+    secret: String,
 
     /// S3 bucket to use for persisting template JSON files.
     #[clap(long, env = "CADRE_BUCKET")]
