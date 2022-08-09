@@ -65,10 +65,7 @@ impl Args {
 
         let addr: SocketAddr = (Ipv6Addr::UNSPECIFIED, self.port).into();
         info!(?addr, "running cadre");
-        info!(
-            "visit frontend at {}?secret={}",
-            addr, logged_secret
-        );
+        info!("visit frontend at {}?secret={}", addr, logged_secret);
 
         axum::Server::bind(&addr)
             .serve(app.into_make_service())
