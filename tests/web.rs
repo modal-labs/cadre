@@ -20,7 +20,7 @@ async fn spawn_test_server() -> Result<(CadreClient, JoinHandle<()>)> {
     let state = State::new(chain, storage, Some("default"));
 
     let secret = String::from("test-secret");
-    let app = server(state, Some(secret.clone()));
+    let app = server(state, secret.clone());
 
     let listener = TcpListener::bind("localhost:0")?;
     let client = CadreClient::new(&format!("http://{}", listener.local_addr()?), &secret);
