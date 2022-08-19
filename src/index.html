@@ -142,11 +142,11 @@
       const submit = document.getElementById("submit");
       const indicator = document.getElementById("indicator");
       const changes = document.getElementById("changes");
-      
+
       // Pass URL parameter secret to form value.
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
-      secretInput.value = urlParams.get('secret');
+      secretInput.value = urlParams.get("secret");
 
       let editor = null;
       let environment = environmentInput.value;
@@ -154,17 +154,11 @@
       let currentValue = {};
       let editorValue = {};
 
-      console.log(environment);
-      console.log(secret);
-
       async function updateEnv() {
         try {
-          const resp = await fetch(
-            `/t/${environment}`,{
-              headers: {
-                "X-Cadre-Secret": secret
-              }}
-          );
+          const resp = await fetch(`/t/${environment}`, {
+            headers: { "X-Cadre-Secret": secret },
+          });
           let value;
           if (resp.ok) {
             value = await resp.json();
@@ -182,6 +176,11 @@
       environmentForm.addEventListener("submit", (event) => {
         event.preventDefault();
         environment = environmentInput.value;
+        updateEnv();
+      });
+      secretForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        secret = secretInput.value;
         updateEnv();
       });
 
@@ -213,8 +212,8 @@
             method: "PUT",
             body: JSON.stringify(newValue),
             headers: {
-                "Content-Type": "application/json",
-                "X-Cadre-Secret": secret
+              "Content-Type": "application/json",
+              "X-Cadre-Secret": secret,
             },
           });
           if (resp.status === 200) {
