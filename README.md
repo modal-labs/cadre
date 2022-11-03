@@ -24,7 +24,7 @@ requests per second running on a consumer MacBook Pro, tested using
 Template values have keys that are prefixed with the `*` character. These values
 are resolved at request-time.
 
-- `aws:<NAME>`: A secret stored in
+- `aws:<NAME>`: A JSON secret stored in
   [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/). For
   performance, secrets are cached by the server for up to a minute.
 
